@@ -1,4 +1,4 @@
-# RazorGuard Model Card
+# RiskPulse Model Card
 
 ## Model Details
 - **Architecture**: `HistGradientBoostingClassifier`
@@ -40,7 +40,7 @@ Synthetic dataset generated deterministically (`seed=42`). 10,000 transactions a
 - **Test**: 1,500 (15%) - *Never seen during training or threshold tuning.*
 
 ## Ethical Considerations
-To ensure fair and transparent operations, RazorGuard incorporates a **Bounded Evidence Agent**. Decisions are never a "black box." The ML score is paired with deterministic risk signals, and an LLM is used strictly to translate those signals into a human-readable explanation for the reviewer.
+To ensure fair and transparent operations, RiskPulse incorporates a **Bounded Evidence Agent**. Decisions are never a "black box." The ML score is paired with deterministic risk signals, and an LLM is used strictly to translate those signals into a human-readable explanation for the reviewer.
 
 ## Limitations
 - **This is a synthetic dataset created for buildathon evaluation and does not represent production fraud performance.** The PR-AUC of 0.9699 was measured on a held-out synthetic test set and should not be interpreted as real-world production accuracy.

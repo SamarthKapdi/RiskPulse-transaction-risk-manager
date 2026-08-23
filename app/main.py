@@ -37,7 +37,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 app = FastAPI(
-    title="RazorGuard — Explainable AI Transaction Risk Manager",
+    title="RiskPulse — Explainable AI Transaction Risk Manager",
     description=(
         "Defense-only AI risk detection system for payment transactions. "
         "Detects suspicious behavior, produces calibrated risk scores, "

@@ -1,4 +1,4 @@
-# RazorGuard
+# RiskPulse
 
 ## AI Transaction Risk Manager
 
@@ -12,7 +12,7 @@ Track 02 — Razorpay AI Buildathon 2026
 Merchants lose money through fraudulent and suspicious transactions, but they cannot manually inspect every transaction. Simple blocklists are brittle, and black-box ML models reject legitimate customers without explanation, creating a terrible customer experience.
 
 ### Solution
-**RazorGuard** combines ML risk scoring, AI-generated evidence, deterministic policy enforcement, and persistent audit trails into a single, cohesive risk management engine.
+**RiskPulse** combines ML risk scoring, AI-generated evidence, deterministic policy enforcement, and persistent audit trails into a single, cohesive risk management engine.
 
 ### Why it is different
 - **The ML model detects risk**: It scores transactions based on historical patterns and velocity.
@@ -76,7 +76,7 @@ GEMINI_API_KEY=your_gemini_key_here
 - `GET /risk/audit/{transaction_id}`: Fetch the persistent audit record.
 
 ### Testing
-RazorGuard includes a comprehensive test suite (29 tests) verifying everything from anomaly detection algorithms to the deterministic policy engine.
+RiskPulse includes a comprehensive test suite (29 tests) verifying everything from anomaly detection algorithms to the deterministic policy engine.
 ```bash
 python -m venv venv
 venv\Scripts\activate

@@ -1,6 +1,6 @@
 # Architecture
 
-RazorGuard is a complete AI-powered transaction risk manager designed around deterministic defense constraints and persistent audit trails.
+RiskPulse is a complete AI-powered transaction risk manager designed around deterministic defense constraints and persistent audit trails.
 
 ## End-to-End Flow
 
