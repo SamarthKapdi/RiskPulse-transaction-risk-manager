@@ -30,6 +30,11 @@
 | **Actual Legit** | 1416 | 2 |
 | **Actual Fraud** | 8 | 74 |
 
+### Deployment Readiness
+- **Docker E2E**: PASS (containers build successfully, `docker compose up -d` brings up API, Worker, Redis, and PostgreSQL with automatic Alembic migrations).
+- **Environment**: `.env.example` properly configured for PostgreSQL + Psycopg.
+- **Git State**: Clean and ready.
+
 ## Cost Analysis
 
 > ⚠️ Illustrative merchant cost assumptions
