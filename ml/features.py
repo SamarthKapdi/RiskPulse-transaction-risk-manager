@@ -92,6 +92,7 @@ def build_preprocessor() -> ColumnTransformer:
         transformers=[
             ("num", numeric_pipeline, NUMERIC_FEATURES),
             ("cat", categorical_pipeline, cat_for_encoding),
+            ("bin", "passthrough", BINARY_FEATURES),
         ],
         remainder="drop",
     )
@@ -150,4 +151,6 @@ def get_feature_names(preprocessor: ColumnTransformer) -> list[str]:
             encoder = transformer.named_steps["encoder"]
             cat_names = encoder.get_feature_names_out(columns)
             names.extend(cat_names)
+        elif name == "bin":
+            names.extend(columns)
     return names

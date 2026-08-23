@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from sqlalchemy import Column, String, Float, DateTime, JSON, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 
-from app.database import Base
+from app.core.database import Base
 
 
 class RiskAuditTrail(Base):

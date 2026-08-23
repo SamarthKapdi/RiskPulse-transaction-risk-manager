@@ -13,7 +13,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Central application settings loaded from environment / .env file."""
 
-    DATABASE_URL: str = "postgresql://postgres:postgres@db:5432/pipeline_db"
+    DATABASE_URL: str = "postgresql+psycopg://postgres:postgres@db:5432/pipeline_db"
     REDIS_URL: str = "redis://redis:6379/0"
     GEMINI_API_KEY: str = ""
     UPLOAD_DIR: str = "/app/uploads"

@@ -17,6 +17,7 @@ from app.core.database import Base
 from app.models.job import Job  # noqa: F401
 from app.models.transaction import Transaction  # noqa: F401
 from app.models.summary import JobSummary  # noqa: F401
+from app.models.risk_audit import RiskAuditTrail  # noqa: F401
 
 # This is the Alembic Config object
 config = context.config

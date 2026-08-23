@@ -16,5 +16,11 @@ The Gemini 1.5 model is used exclusively as an "Evidence & Explanation Agent" (`
 ## 3. Safe Fallbacks
 If the `GEMINI_API_KEY` is missing or the external API is down, the system does not fail open or fail closed; it falls back to a deterministic explanation generation system.
 
-## 4. No Offensive Capabilities
-There is no code in this repository designed to simulate attacks, probe external systems, or recover lost revenue aggressively. It is purely designed to score risk, halt suspicious activity, and provide explanations to human reviewers.
+## 5. Auditability
+Every risk decision is persistently logged to the `risk_audit_trail` PostgreSQL table using SQLAlchemy and Alembic. This includes the transaction ID, timestamp, risk score, exact risk level, policy action, and the model version used to make the decision.
+
+## 6. Secrets Management
+All sensitive configurations (like the `GEMINI_API_KEY` and `DATABASE_URL`) are loaded exclusively from environment variables or a `.env` file (which is ignored in git). The `.env.example` file contains only placeholders. No secrets are ever committed to the repository.
+
+## 7. API Validation & Database Security
+The FastAPI application strictly types and validates all incoming requests using Pydantic models. Database queries are parameterized by SQLAlchemy, completely eliminating SQL injection vectors. No stack traces or sensitive internals are exposed in HTTP response payloads.

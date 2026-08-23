@@ -11,7 +11,11 @@ import os
 from collections import defaultdict
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+
+from app.core.database import get_db
+from app.models.risk_audit import RiskAuditTrail
 
 from app.schemas.risk import (
     AuditRecord,
@@ -38,7 +42,7 @@ _analyzed_results: dict[str, dict] = {}
 _explanations: dict[str, dict] = {}
 
 
-def _analyze_single(txn_data: dict) -> tuple[dict, dict, dict]:
+def _analyze_single(txn_data: dict, db: Session) -> tuple[dict, dict, dict]:
     """Run full analysis pipeline on a single transaction."""
     engine = get_risk_engine()
     policy = get_policy_engine()
@@ -49,9 +53,23 @@ def _analyze_single(txn_data: dict) -> tuple[dict, dict, dict]:
     # Policy decision
     policy_decision = policy.evaluate(risk_result)
 
-    # Store audit record
-    txn_id = risk_result["transaction_id"]
-    audit = {
+    # Store audit record to PostgreSQL
+    audit_record = RiskAuditTrail(
+        transaction_id=txn_id,
+        model_version=risk_result["model_version"],
+        risk_score=risk_result["risk_score"],
+        risk_level=risk_result["risk_level"],
+        decision=policy_decision.decision,
+        requires_review=policy_decision.requires_review,
+        signals=risk_result["signals"],
+        policy_version=policy_decision.policy_version,
+    )
+    db.add(audit_record)
+    db.commit()
+    db.refresh(audit_record)
+    
+    # Store for explanation fallback / dashboard usage if needed
+    _audit_trail[txn_id] = {
         "transaction_id": txn_id,
         "timestamp": risk_result["timestamp"],
         "model_version": risk_result["model_version"],
@@ -61,7 +79,6 @@ def _analyze_single(txn_data: dict) -> tuple[dict, dict, dict]:
         "signals": risk_result["signals"],
         "policy_version": policy_decision.policy_version,
     }
-    _audit_trail[txn_id] = audit
 
     # Combined result
     combined = {
@@ -87,7 +104,10 @@ def _analyze_single(txn_data: dict) -> tuple[dict, dict, dict]:
     description="Submit a transaction for risk assessment. Returns risk score, "
                 "level, decision, and interpretable risk signals.",
 )
-def analyze_transaction(request: TransactionAnalysisRequest) -> RiskResult:
+def analyze_transaction(
+    request: TransactionAnalysisRequest,
+    db: Session = Depends(get_db),
+) -> RiskResult:
     """Perform risk analysis on a single transaction."""
     txn_data = request.model_dump()
 
@@ -96,7 +116,7 @@ def analyze_transaction(request: TransactionAnalysisRequest) -> RiskResult:
         import uuid
         txn_data["transaction_id"] = f"TXN_{uuid.uuid4().hex[:8].upper()}"
 
-    combined, _, _ = _analyze_single(txn_data)
+    combined, _, _ = _analyze_single(txn_data, db)
     return RiskResult(**combined)
 
 
@@ -163,7 +183,10 @@ def get_explanation(transaction_id: str) -> RiskExplanation:
     summary="Batch analyze transactions",
     description="Submit multiple transactions for risk analysis.",
 )
-def batch_analyze(request: BatchAnalysisRequest) -> BatchAnalysisResponse:
+def batch_analyze(
+    request: BatchAnalysisRequest,
+    db: Session = Depends(get_db),
+) -> BatchAnalysisResponse:
     """Analyze a batch of transactions."""
     results = []
     for txn_req in request.transactions:
@@ -171,7 +194,7 @@ def batch_analyze(request: BatchAnalysisRequest) -> BatchAnalysisResponse:
         if not txn_data.get("transaction_id"):
             import uuid
             txn_data["transaction_id"] = f"TXN_{uuid.uuid4().hex[:8].upper()}"
-        combined, _, _ = _analyze_single(txn_data)
+        combined, _, _ = _analyze_single(txn_data, db)
         results.append(RiskResult(**combined))
 
     high_risk = sum(1 for r in results if r.risk_level in ("HIGH", "CRITICAL"))
@@ -269,11 +292,26 @@ def get_risk_metrics() -> RiskMetrics:
     description="Returns the full audit record for a risk decision, including "
                 "model version, signals, and policy version.",
 )
-def get_audit_record(transaction_id: str) -> AuditRecord:
+def get_audit_record(
+    transaction_id: str,
+    db: Session = Depends(get_db),
+) -> AuditRecord:
     """Get the audit trail for a specific transaction."""
-    if transaction_id not in _audit_trail:
+    record = db.query(RiskAuditTrail).filter(RiskAuditTrail.transaction_id == transaction_id).first()
+    if not record:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"No audit record found for transaction {transaction_id}",
         )
-    return AuditRecord(**_audit_trail[transaction_id])
+    
+    return AuditRecord(
+        transaction_id=record.transaction_id,
+        timestamp=record.timestamp.isoformat() if record.timestamp else "",
+        model_version=record.model_version,
+        risk_score=record.risk_score,
+        risk_level=record.risk_level,
+        decision=record.decision,
+        signals=record.signals,
+        policy_version=record.policy_version,
+        explanation=record.explanation,
+    )

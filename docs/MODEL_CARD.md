@@ -3,7 +3,7 @@
 ## Model Details
 - **Architecture**: `HistGradientBoostingClassifier`
 - **Framework**: `scikit-learn 1.5.2`
-- **Training Date**: 2024-08-23
+- **Training Date**: 2026-08-23
 - **Version**: v1.0.0
 - **Use Case**: Detection of fraudulent payment transactions.
 
@@ -17,21 +17,21 @@
 
 ## Metrics
 Evaluated on a strictly held-out test set of 1,500 transactions.
-- **Precision**: 0.8625
-- **Recall**: 0.8415
-- **F1 Score**: 0.8519
-- **PR-AUC**: 0.9212 (Primary optimization metric due to class imbalance)
-- **ROC-AUC**: 0.9837
+- **Precision**: 0.9737
+- **Recall**: 0.9024
+- **F1 Score**: 0.9367
+- **PR-AUC**: 0.9699 (Primary optimization metric due to class imbalance)
+- **ROC-AUC**: 0.9972
 
 ## Business Economics Analysis
 *Illustrative merchant cost assumptions:*
-- Cost to review a legitimate transaction (False Positive): ₹1,650
-- Cost of missing a fraudulent transaction (False Negative): ₹65,000
+- Cost to review a legitimate transaction (False Positive): ₹150
+- Cost of missing a fraudulent transaction (False Negative): ₹5000
 
-*Cost Evaluation (at optimal threshold 0.230):*
-- FP count: 11
-- FN count: 13
-- Total Expected Risk Cost per 1,000 transactions: ₹44,433.33
+*Cost Evaluation (at optimal threshold 0.140):*
+- FP count: 2
+- FN count: 8
+- Total Expected Risk Cost per 1,000 transactions: ₹26,866.67
 
 ## Training Data
 Synthetic dataset generated deterministically (`seed=42`). 10,000 transactions across 200 user profiles and 50 merchants. Time-aware split:
@@ -41,3 +41,8 @@ Synthetic dataset generated deterministically (`seed=42`). 10,000 transactions a
 
 ## Ethical Considerations
 To ensure fair and transparent operations, RazorGuard incorporates a **Bounded Evidence Agent**. Decisions are never a "black box." The ML score is paired with deterministic risk signals, and an LLM is used strictly to translate those signals into a human-readable explanation for the reviewer.
+
+## Limitations
+- **This is a synthetic dataset created for buildathon evaluation and does not represent production fraud performance.** The PR-AUC of 0.9699 was measured on a held-out synthetic test set and should not be interpreted as real-world production accuracy.
+- The model has not been validated against production payment data from any merchant.
+- The false-positive economics use illustrative cost assumptions, not real merchant loss figures.
