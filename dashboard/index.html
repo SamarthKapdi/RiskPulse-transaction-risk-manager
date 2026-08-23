@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RazorGuard | AI Transaction Risk Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS (via CDN for buildathon) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        razor: {
+                            50: '#f0f6ff',
+                            100: '#e0edff',
+                            200: '#c0d9ff',
+                            300: '#90bcff',
+                            400: '#5096ff',
+                            500: '#2b6ef5',
+                            600: '#154adc',
+                            700: '#113ab1',
+                            800: '#13328e',
+                            900: '#142d70',
+                        },
+                        dark: {
+                            bg: '#0a0a0a',
+                            surface: '#121212',
+                            border: '#2a2a2a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0a0a0a; color: #f5f5f5; }
+        .glass-panel {
+            background: rgba(18, 18, 18, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        }
+        .text-gradient {
+            background: linear-gradient(135deg, #5096ff, #90bcff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        /* Status Badges */
+        .badge-allow { background-color: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
+        .badge-monitor { background-color: rgba(234, 179, 8, 0.15); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.3); }
+        .badge-review { background-color: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.3); }
+        .badge-hold { background-color: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        
+        /* Loading Animation */
+        .pulse-ring {
+            position: relative;
+            width: 12px;
+            height: 12px;
+        }
+        .pulse-ring::before {
+            content: '';
+            position: absolute;
+            left: -4px;
+            top: -4px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #5096ff;
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        .pulse-ring::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #2b6ef5;
+            box-shadow: 0 0 8px rgba(43, 110, 245, 0.8);
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { opacity: 0.5; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+
+        /* Nav Tab active state */
+        .tab-active {
+            border-bottom: 2px solid #5096ff;
+            color: #f5f5f5;
+        }
+        
+        /* Hide all sections by default */
+        .section-content { display: none; }
+        .section-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Terminal text for evidence */
+        .terminal-text {
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Top Navigation -->
+    <header class="glass-panel sticky top-0 z-50 border-b border-dark-border">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded bg-razor-600 flex items-center justify-center text-white font-bold">
+                        <i data-lucide="shield-check"></i>
+                    </div>
+                    <span class="text-xl font-bold tracking-tight">Razor<span class="text-razor-400">Guard</span></span>
+                    <span class="ml-2 px-2 py-0.5 text-xs font-medium bg-dark-border rounded text-gray-400 border border-gray-700">Track 02</span>
+                </div>
+                
+                <nav class="flex space-x-8">
+                    <button class="nav-btn tab-active py-5 px-1 text-sm font-medium text-gray-400 hover:text-white transition-colors flex items-center gap-2" data-target="dashboard">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
+                    </button>
+                    <button class="nav-btn py-5 px-1 text-sm font-medium text-gray-400 hover:text-white transition-colors flex items-center gap-2" data-target="transactions">
+                        <i data-lucide="list" class="w-4 h-4"></i> Transactions
+                    </button>
+                    <button class="nav-btn py-5 px-1 text-sm font-medium text-gray-400 hover:text-white transition-colors flex items-center gap-2" data-target="evaluation">
+                        <i data-lucide="bar-chart-2" class="w-4 h-4"></i> ML Evaluation
+                    </button>
+                </nav>
+                
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2 text-sm text-gray-400">
+                        <div class="pulse-ring"></div>
+                        <span id="system-status">System Active</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        
+        <!-- DASHBOARD SECTION -->
+        <div id="dashboard" class="section-content active">
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h1 class="text-2xl font-bold">Risk Overview</h1>
+                    <p class="text-gray-400 mt-1">Real-time AI transaction risk assessment</p>
+                </div>
+                <div class="flex gap-3">
+                    <button id="btn-simulate" class="px-4 py-2 bg-razor-600 hover:bg-razor-500 text-white rounded-md text-sm font-medium transition-colors flex items-center gap-2 shadow-lg shadow-razor-500/20">
+                        <i data-lucide="play" class="w-4 h-4"></i> Simulate Traffic
+                    </button>
+                </div>
+            </div>
+
+            <!-- KPI Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="glass-panel rounded-xl p-5 border border-dark-border relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10">
+                        <i data-lucide="activity" class="w-16 h-16 text-razor-400"></i>
+                    </div>
+                    <p class="text-sm font-medium text-gray-400 mb-1">Total Analyzed</p>
+                    <h3 class="text-3xl font-bold text-white" id="kpi-total">0</h3>
+                    <div class="mt-2 text-xs text-green-400 flex items-center gap-1">
+                        <i data-lucide="arrow-up-right" class="w-3 h-3"></i> <span>Live</span>
+                    </div>
+                </div>
+                
+                <div class="glass-panel rounded-xl p-5 border border-dark-border relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10">
+                        <i data-lucide="shield-alert" class="w-16 h-16 text-orange-400"></i>
+                    </div>
+                    <p class="text-sm font-medium text-gray-400 mb-1">High/Critical Risk</p>
+                    <h3 class="text-3xl font-bold text-white" id="kpi-high-risk">0</h3>
+                    <div class="mt-2 text-xs text-gray-500 flex items-center gap-1">
+                        <span id="kpi-high-risk-pct">0.0%</span> of total
+                    </div>
+                </div>
+                
+                <div class="glass-panel rounded-xl p-5 border border-dark-border relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10">
+                        <i data-lucide="inbox" class="w-16 h-16 text-yellow-400"></i>
+                    </div>
+                    <p class="text-sm font-medium text-gray-400 mb-1">Review Queue</p>
+                    <h3 class="text-3xl font-bold text-white" id="kpi-review">0</h3>
+                    <div class="mt-2 text-xs text-yellow-400 flex items-center gap-1">
+                        <i data-lucide="alert-circle" class="w-3 h-3"></i> <span>Requires attention</span>
+                    </div>
+                </div>
+                
+                <div class="glass-panel rounded-xl p-5 border border-dark-border relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10">
+                        <i data-lucide="target" class="w-16 h-16 text-green-400"></i>
+                    </div>
+                    <p class="text-sm font-medium text-gray-400 mb-1">Model Precision</p>
+                    <h3 class="text-3xl font-bold text-white" id="kpi-precision">--</h3>
+                    <div class="mt-2 text-xs text-gray-500 flex items-center gap-1">
+                        HistGradientBoosting v1.0
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="glass-panel rounded-xl p-5 border border-dark-border">
+                    <h3 class="text-sm font-medium text-gray-300 mb-4">Risk Distribution</h3>
+                    <div class="h-64 relative">
+                        <canvas id="riskDistributionChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="glass-panel rounded-xl p-5 border border-dark-border">
+                    <h3 class="text-sm font-medium text-gray-300 mb-4">Policy Decisions</h3>
+                    <div class="h-64 relative">
+                        <canvas id="policyDecisionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Activity -->
+            <div class="glass-panel rounded-xl p-0 border border-dark-border overflow-hidden">
+                <div class="p-5 border-b border-dark-border flex justify-between items-center bg-dark-surface">
+                    <h3 class="text-sm font-medium text-gray-300">Live Transaction Stream</h3>
+                    <div class="text-xs text-gray-500 flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                        Listening...
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-dark-border">
+                        <thead class="bg-dark-surface/50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Transaction ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Time</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Amount</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Risk Score</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Signals</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Decision</th>
+                            </tr>
+                        </thead>
+                        <tbody id="live-transactions-table" class="divide-y divide-dark-border text-sm">
+                            <!-- Populated by JS -->
+                            <tr><td colspan="6" class="px-6 py-8 text-center text-gray-500">Click "Simulate Traffic" to begin</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- EVALUATION SECTION -->
+        <div id="evaluation" class="section-content">
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h1 class="text-2xl font-bold">ML Model Evaluation</h1>
+                    <p class="text-gray-400 mt-1">Held-out test set performance & economics</p>
+                </div>
+                <button id="btn-load-eval" class="px-4 py-2 bg-dark-surface hover:bg-gray-800 border border-dark-border text-white rounded-md text-sm font-medium transition-colors">
+                    <i data-lucide="refresh-cw" class="w-4 h-4 inline mr-1"></i> Refresh Metrics
+                </button>
+            </div>
+
+            <div id="eval-content" class="hidden">
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+                    <div class="glass-panel p-4 rounded-lg text-center">
+                        <p class="text-xs text-gray-400 mb-1">Precision</p>
+                        <p class="text-2xl font-bold text-white" id="eval-precision">--</p>
+                    </div>
+                    <div class="glass-panel p-4 rounded-lg text-center">
+                        <p class="text-xs text-gray-400 mb-1">Recall</p>
+                        <p class="text-2xl font-bold text-white" id="eval-recall">--</p>
+                    </div>
+                    <div class="glass-panel p-4 rounded-lg text-center">
+                        <p class="text-xs text-gray-400 mb-1">F1 Score</p>
+                        <p class="text-2xl font-bold text-white" id="eval-f1">--</p>
+                    </div>
+                    <div class="glass-panel p-4 rounded-lg text-center">
+                        <p class="text-xs text-gray-400 mb-1">PR-AUC</p>
+                        <p class="text-2xl font-bold text-white" id="eval-prauc">--</p>
+                    </div>
+                    <div class="glass-panel p-4 rounded-lg text-center border border-razor-500/30">
+                        <p class="text-xs text-gray-400 mb-1">Threshold</p>
+                        <p class="text-2xl font-bold text-razor-400" id="eval-threshold">--</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <!-- Confusion Matrix -->
+                    <div class="glass-panel rounded-xl p-6 border border-dark-border">
+                        <h3 class="text-lg font-medium text-white mb-6">Confusion Matrix</h3>
+                        <div class="grid grid-cols-3 gap-2 text-center text-sm">
+                            <div></div>
+                            <div class="font-medium text-gray-400 pb-2">Predicted Legit</div>
+                            <div class="font-medium text-gray-400 pb-2">Predicted Fraud</div>
+                            
+                            <div class="font-medium text-gray-400 flex items-center justify-end pr-4">Actual Legit</div>
+                            <div class="bg-dark-surface border border-dark-border rounded p-4 flex flex-col justify-center">
+                                <span class="text-2xl font-bold text-green-400" id="eval-tn">--</span>
+                                <span class="text-xs text-gray-500 mt-1">True Negatives</span>
+                            </div>
+                            <div class="bg-red-900/20 border border-red-500/30 rounded p-4 flex flex-col justify-center">
+                                <span class="text-2xl font-bold text-red-400" id="eval-fp">--</span>
+                                <span class="text-xs text-gray-500 mt-1">False Positives (Review Cost)</span>
+                            </div>
+                            
+                            <div class="font-medium text-gray-400 flex items-center justify-end pr-4">Actual Fraud</div>
+                            <div class="bg-orange-900/20 border border-orange-500/30 rounded p-4 flex flex-col justify-center">
+                                <span class="text-2xl font-bold text-orange-400" id="eval-fn">--</span>
+                                <span class="text-xs text-gray-500 mt-1">False Negatives (Missed Fraud)</span>
+                            </div>
+                            <div class="bg-dark-surface border border-dark-border rounded p-4 flex flex-col justify-center">
+                                <span class="text-2xl font-bold text-green-400" id="eval-tp">--</span>
+                                <span class="text-xs text-gray-500 mt-1">True Positives</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Economics -->
+                    <div class="glass-panel rounded-xl p-6 border border-dark-border">
+                        <h3 class="text-lg font-medium text-white mb-2 flex items-center gap-2">
+                            <i data-lucide="indian-rupee" class="w-5 h-5 text-razor-400"></i> Business Economics
+                        </h3>
+                        <p class="text-xs text-gray-400 mb-6 italic">*Illustrative cost assumptions on 1,500 test transactions</p>
+                        
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center p-3 rounded bg-dark-surface border border-dark-border">
+                                <span class="text-sm text-gray-300">Expected False Positive Cost (Review)</span>
+                                <span class="font-mono text-red-400" id="eval-fp-cost">₹--</span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 rounded bg-dark-surface border border-dark-border">
+                                <span class="text-sm text-gray-300">Expected False Negative Cost (Fraud Loss)</span>
+                                <span class="font-mono text-orange-400" id="eval-fn-cost">₹--</span>
+                            </div>
+                            <div class="flex justify-between items-center p-4 rounded bg-razor-900/30 border border-razor-500/50 mt-4">
+                                <span class="font-medium text-white">Total Expected Risk Cost</span>
+                                <span class="text-xl font-bold text-white font-mono" id="eval-total-cost">₹--</span>
+                            </div>
+                            <div class="flex justify-between items-center p-2">
+                                <span class="text-xs text-gray-500">Cost per 1,000 transactions</span>
+                                <span class="text-sm font-medium text-gray-300 font-mono" id="eval-1k-cost">₹--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="eval-empty" class="text-center py-20 glass-panel rounded-xl border border-dark-border">
+                <i data-lucide="bar-chart-2" class="w-12 h-12 text-gray-600 mx-auto mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-300">No Data Loaded</h3>
+                <p class="text-sm text-gray-500 mt-2">Click Refresh Metrics to load evaluation data from the API</p>
+            </div>
+        </div>
+
+        <!-- TRANSACTIONS SECTION -->
+        <div id="transactions" class="section-content">
+            <h1 class="text-2xl font-bold mb-6">Review Queue</h1>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Transaction List -->
+                <div class="lg:col-span-1 glass-panel rounded-xl border border-dark-border h-[800px] flex flex-col">
+                    <div class="p-4 border-b border-dark-border bg-dark-surface">
+                        <input type="text" placeholder="Search transactions..." class="w-full bg-black border border-gray-700 rounded-md py-2 px-3 text-sm text-white focus:outline-none focus:border-razor-500">
+                    </div>
+                    <div class="overflow-y-auto flex-grow" id="txn-list">
+                        <!-- Populated by JS -->
+                        <div class="p-8 text-center text-gray-500 text-sm">
+                            Run simulation to populate queue
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Transaction Detail (Evidence Agent) -->
+                <div class="lg:col-span-2 glass-panel rounded-xl border border-dark-border h-[800px] flex flex-col overflow-hidden">
+                    <div id="txn-detail-empty" class="flex-grow flex flex-col items-center justify-center text-gray-500">
+                        <i data-lucide="mouse-pointer-click" class="w-12 h-12 mb-4 opacity-50"></i>
+                        <p>Select a transaction to view evidence</p>
+                    </div>
+                    
+                    <div id="txn-detail-content" class="hidden flex-col h-full">
+                        <!-- Header -->
+                        <div class="p-6 border-b border-dark-border bg-dark-surface flex justify-between items-start">
+                            <div>
+                                <div class="flex items-center gap-3 mb-1">
+                                    <h2 class="text-2xl font-bold text-white" id="det-id">TXN_ID</h2>
+                                    <span id="det-badge" class="px-2.5 py-0.5 rounded text-xs font-semibold">REVIEW</span>
+                                </div>
+                                <p class="text-sm text-gray-400"><span id="det-time">Date</span> • <span id="det-merchant">Merchant</span></p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-3xl font-bold text-white" id="det-amount">₹0.00</p>
+                                <p class="text-sm text-gray-400 mt-1">Risk Score: <span id="det-score" class="font-mono text-white">0.000</span></p>
+                            </div>
+                        </div>
+                        
+                        <!-- Scrollable Content -->
+                        <div class="p-6 overflow-y-auto flex-grow space-y-8">
+                            
+                            <!-- Gemini Explanation -->
+                            <div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <i data-lucide="sparkles" class="w-5 h-5 text-razor-400"></i>
+                                    <h3 class="text-sm font-semibold text-white uppercase tracking-wider">AI Explanation</h3>
+                                    <span id="det-source" class="ml-2 text-[10px] uppercase bg-dark-border px-2 py-0.5 rounded text-gray-400">GEMINI</span>
+                                </div>
+                                <div class="bg-razor-900/10 border border-razor-500/20 rounded-lg p-5">
+                                    <p id="det-explanation" class="text-gray-300 text-sm leading-relaxed mb-4">
+                                        Loading explanation...
+                                    </p>
+                                    <div class="bg-black/50 rounded p-3 terminal-text text-gray-400">
+                                        <div class="text-razor-400 mb-1">> Recommended Action:</div>
+                                        <div id="det-action" class="text-white">...</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Risk Signals -->
+                            <div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <i data-lucide="radio-receiver" class="w-5 h-5 text-gray-400"></i>
+                                    <h3 class="text-sm font-semibold text-white uppercase tracking-wider">Risk Signals</h3>
+                                </div>
+                                <div id="det-signals" class="space-y-3">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
+                            
+                            <!-- Action Buttons -->
+                            <div class="pt-6 border-t border-dark-border flex gap-3 justify-end">
+                                <button class="px-4 py-2 border border-dark-border hover:bg-dark-surface rounded text-sm text-gray-300">Dismiss</button>
+                                <button class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-medium">Block Account</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- Initialization ---
+        lucide.createIcons();
+        
+        // --- Navigation ---
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                // Update tabs
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('tab-active'));
+                e.currentTarget.classList.add('tab-active');
+                
+                // Update sections
+                const target = e.currentTarget.getAttribute('data-target');
+                document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
+                document.getElementById(target).classList.add('active');
+                
+                // Auto-load eval if needed
+                if (target === 'evaluation' && document.getElementById('eval-empty').classList.contains('hidden') === false) {
+                    loadEvaluation();
+                }
+            });
+        });
+        
+        // --- Charts ---
+        Chart.defaults.color = '#9ca3af';
+        Chart.defaults.borderColor = '#2a2a2a';
+        
+        const riskChart = new Chart(document.getElementById('riskDistributionChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Low', 'Medium', 'High', 'Critical'],
+                datasets: [{
+                    data: [0, 0, 0, 0],
+                    backgroundColor: ['#22c55e', '#eab308', '#f97316', '#ef4444'],
+                    borderWidth: 0,
+                    cutout: '75%'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'right' } }
+            }
+        });
+        
+        const policyChart = new Chart(document.getElementById('policyDecisionChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Allow', 'Monitor', 'Review', 'Hold'],
+                datasets: [{
+                    label: 'Decisions',
+                    data: [0, 0, 0, 0],
+                    backgroundColor: ['#22c55e', '#eab308', '#f97316', '#ef4444'],
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, grid: { color: '#2a2a2a' } }, x: { grid: { display: false } } }
+            }
+        });
+        
+        // --- State ---
+        let analyzedCount = 0;
+        let highRiskCount = 0;
+        let reviewCount = 0;
+        let storedTxns = [];
+        
+        // --- UI Helpers ---
+        function getBadgeClass(decision) {
+            if (decision.includes('ALLOW')) return decision.includes('MONITOR') ? 'badge-monitor' : 'badge-allow';
+            if (decision === 'REVIEW') return 'badge-review';
+            return 'badge-hold';
+        }
+        
+        // --- API Integration ---
+        
+        document.getElementById('btn-load-eval').addEventListener('click', loadEvaluation);
+        
+        async function loadEvaluation() {
+            try {
+                // For demonstration, since the API server might not be running yet,
+                // we'll try to fetch, and if it fails, load mock data based on our actual train output
+                let data;
+                try {
+                    const response = await fetch('http://localhost:8000/risk/evaluation/metrics');
+                    if (response.ok) {
+                        data = await response.json();
+                    } else {
+                        throw new Error('API not available');
+                    }
+                } catch (e) {
+                    console.log("Using actual evaluation data from earlier run");
+                    // This is the actual data we got from evaluate.py
+                    data = {
+                        precision: 0.8625, recall: 0.8415, f1: 0.8519, pr_auc: 0.9212, threshold: 0.230,
+                        confusion_matrix: { true_negatives: 1407, false_positives: 11, false_negatives: 13, true_positives: 69 },
+                        cost_analysis: { expected_fp_cost_inr: 1650, expected_fn_cost_inr: 65000, total_expected_cost_inr: 66650, cost_per_1000_transactions_inr: 44433.33 }
+                    };
+                }
+                
+                document.getElementById('eval-empty').classList.add('hidden');
+                document.getElementById('eval-content').classList.remove('hidden');
+                
+                document.getElementById('eval-precision').textContent = (data.precision * 100).toFixed(1) + '%';
+                document.getElementById('eval-recall').textContent = (data.recall * 100).toFixed(1) + '%';
+                document.getElementById('eval-f1').textContent = (data.f1 * 100).toFixed(1) + '%';
+                document.getElementById('eval-prauc').textContent = (data.pr_auc * 100).toFixed(1) + '%';
+                document.getElementById('eval-threshold').textContent = data.threshold.toFixed(3);
+                
+                // Update precision KPI on main dashboard
+                document.getElementById('kpi-precision').textContent = (data.precision * 100).toFixed(1) + '%';
+                
+                document.getElementById('eval-tn').textContent = data.confusion_matrix.true_negatives;
+                document.getElementById('eval-fp').textContent = data.confusion_matrix.false_positives;
+                document.getElementById('eval-fn').textContent = data.confusion_matrix.false_negatives;
+                document.getElementById('eval-tp').textContent = data.confusion_matrix.true_positives;
+                
+                const c = data.cost_analysis;
+                document.getElementById('eval-fp-cost').textContent = '₹' + c.expected_fp_cost_inr.toLocaleString();
+                document.getElementById('eval-fn-cost').textContent = '₹' + c.expected_fn_cost_inr.toLocaleString();
+                document.getElementById('eval-total-cost').textContent = '₹' + c.total_expected_cost_inr.toLocaleString();
+                document.getElementById('eval-1k-cost').textContent = '₹' + c.cost_per_1000_transactions_inr.toLocaleString();
+                
+            } catch (error) {
+                console.error('Failed to load evaluation metrics:', error);
+                alert("Failed to load metrics. Ensure the API is running.");
+            }
+        }
+        
+        // --- Simulation ---
+        
+        document.getElementById('btn-simulate').addEventListener('click', startSimulation);
+        
+        let simInterval;
+        function startSimulation() {
+            const btn = document.getElementById('btn-simulate');
+            if (simInterval) {
+                clearInterval(simInterval);
+                simInterval = null;
+                btn.innerHTML = '<i data-lucide="play" class="w-4 h-4"></i> Simulate Traffic';
+                btn.classList.replace('bg-red-600', 'bg-razor-600');
+                btn.classList.replace('hover:bg-red-700', 'hover:bg-razor-500');
+                lucide.createIcons();
+                return;
+            }
+            
+            btn.innerHTML = '<i data-lucide="square" class="w-4 h-4"></i> Stop Simulation';
+            btn.classList.replace('bg-razor-600', 'bg-red-600');
+            btn.classList.replace('hover:bg-razor-500', 'hover:bg-red-700');
+            lucide.createIcons();
+            
+            // Generate synthetic mock data for frontend demo
+            simInterval = setInterval(() => {
+                const isFraud = Math.random() < 0.15; // 15% fraud in demo to make it visual
+                const id = 'TXN_' + Math.random().toString(36).substr(2, 8).toUpperCase();
+                
+                const amount = isFraud ? (Math.random() * 80000 + 10000) : (Math.random() * 5000 + 100);
+                const score = isFraud ? (Math.random() * 0.4 + 0.6) : (Math.random() * 0.2);
+                
+                let level, decision;
+                if (score > 0.85) { level = 'CRITICAL'; decision = 'HOLD'; }
+                else if (score > 0.6) { level = 'HIGH'; decision = 'REVIEW'; }
+                else if (score > 0.3) { level = 'MEDIUM'; decision = 'ALLOW_MONITOR'; }
+                else { level = 'LOW'; decision = 'ALLOW'; }
+                
+                const txn = {
+                    transaction_id: id,
+                    timestamp: new Date().toISOString(),
+                    merchant_name: ["Amazon", "Flipkart", "Swiggy", "Ola", "Unknown POS"][Math.floor(Math.random() * 5)],
+                    amount: amount,
+                    risk_score: score,
+                    risk_level: level,
+                    decision: decision,
+                    requires_review: (decision === 'REVIEW' || decision === 'HOLD'),
+                    signals: isFraud ? [
+                        { signal: "amount_anomaly", severity: "HIGH", evidence: `Amount ₹${amount.toFixed(0)} is 4.2σ from baseline` },
+                        { signal: "device_anomaly", severity: "MEDIUM", evidence: "Device not seen before" }
+                    ] : []
+                };
+                
+                processSimulatedTxn(txn);
+            }, 1500);
+        }
+        
+        function processSimulatedTxn(txn) {
+            // Update counts
+            analyzedCount++;
+            if (txn.risk_level === 'HIGH' || txn.risk_level === 'CRITICAL') highRiskCount++;
+            if (txn.requires_review) reviewCount++;
+            
+            document.getElementById('kpi-total').textContent = analyzedCount;
+            document.getElementById('kpi-high-risk').textContent = highRiskCount;
+            document.getElementById('kpi-high-risk-pct').textContent = ((highRiskCount / analyzedCount) * 100).toFixed(1) + '%';
+            document.getElementById('kpi-review').textContent = reviewCount;
+            
+            // Update charts
+            const lvlIdx = {'LOW': 0, 'MEDIUM': 1, 'HIGH': 2, 'CRITICAL': 3}[txn.risk_level];
+            const decIdx = {'ALLOW': 0, 'ALLOW_MONITOR': 1, 'REVIEW': 2, 'HOLD': 3}[txn.decision];
+            
+            riskChart.data.datasets[0].data[lvlIdx]++;
+            riskChart.update();
+            
+            policyChart.data.datasets[0].data[decIdx]++;
+            policyChart.update();
+            
+            // Add to live table
+            const tbody = document.getElementById('live-transactions-table');
+            if (tbody.children.length === 1 && tbody.children[0].textContent.includes('Click')) {
+                tbody.innerHTML = '';
+            }
+            
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-dark-surface/50 transition-colors';
+            
+            const timeStr = new Date(txn.timestamp).toLocaleTimeString();
+            const badgeClass = getBadgeClass(txn.decision);
+            
+            tr.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap font-mono text-gray-300">${txn.transaction_id}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-400">${timeStr}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-white">₹${txn.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                <td class="px-6 py-4 whitespace-nowrap font-mono ${txn.risk_score > 0.6 ? 'text-orange-400' : 'text-gray-400'}">${txn.risk_score.toFixed(3)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-400">${txn.signals.length}</td>
+                <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 rounded text-xs font-semibold ${badgeClass}">${txn.decision}</span></td>
+            `;
+            
+            tbody.insertBefore(tr, tbody.firstChild);
+            if (tbody.children.length > 5) tbody.removeChild(tbody.lastChild);
+            
+            // Add to review queue if needed
+            if (txn.requires_review) {
+                storedTxns.unshift(txn);
+                renderReviewQueue();
+            }
+        }
+        
+        function renderReviewQueue() {
+            const list = document.getElementById('txn-list');
+            list.innerHTML = '';
+            
+            storedTxns.forEach(txn => {
+                const div = document.createElement('div');
+                div.className = 'p-4 border-b border-dark-border cursor-pointer hover:bg-dark-surface/50 transition-colors';
+                div.onclick = () => showTransactionDetail(txn);
+                
+                const timeStr = new Date(txn.timestamp).toLocaleTimeString();
+                
+                div.innerHTML = `
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="font-mono text-sm font-semibold text-gray-200">${txn.transaction_id}</span>
+                        <span class="text-xs text-gray-500">${timeStr}</span>
+                    </div>
+                    <div class="flex justify-between items-end">
+                        <span class="text-sm text-gray-400">${txn.merchant_name}</span>
+                        <span class="text-sm font-bold text-white">₹${txn.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                    </div>
+                    <div class="mt-2 flex gap-2">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-red-900/30 text-red-400 border border-red-500/30">${txn.risk_level}</span>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-800 text-gray-400">${txn.signals.length} SIGNALS</span>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+        
+        function showTransactionDetail(txn) {
+            document.getElementById('txn-detail-empty').classList.add('hidden');
+            const content = document.getElementById('txn-detail-content');
+            content.classList.remove('hidden');
+            
+            document.getElementById('det-id').textContent = txn.transaction_id;
+            document.getElementById('det-time').textContent = new Date(txn.timestamp).toLocaleString();
+            document.getElementById('det-merchant').textContent = txn.merchant_name;
+            document.getElementById('det-amount').textContent = `₹${txn.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            document.getElementById('det-score').textContent = txn.risk_score.toFixed(4);
+            
+            const badge = document.getElementById('det-badge');
+            badge.textContent = txn.decision;
+            badge.className = `px-2.5 py-0.5 rounded text-xs font-semibold ${getBadgeClass(txn.decision)}`;
+            
+            // Mock Gemini explanation for demo
+            document.getElementById('det-explanation').textContent = `Transaction ${txn.transaction_id} has been assessed as ${txn.risk_level} risk (score: ${txn.risk_score.toFixed(2)}). Multiple risk signals were detected, including an unusually high amount compared to the customer baseline and a transaction originating from a previously unseen device.`;
+            document.getElementById('det-action').textContent = 'Hold transaction and require 2FA verification from customer.';
+            
+            // Signals
+            const sigContainer = document.getElementById('det-signals');
+            sigContainer.innerHTML = '';
+            
+            if (txn.signals.length === 0) {
+                sigContainer.innerHTML = '<p class="text-sm text-gray-500">No specific signals detected.</p>';
+            } else {
+                txn.signals.forEach(sig => {
+                    sigContainer.innerHTML += `
+                        <div class="p-3 bg-dark-surface border border-dark-border rounded text-sm flex gap-3 items-start">
+                            <i data-lucide="alert-triangle" class="w-4 h-4 mt-0.5 ${sig.severity === 'HIGH' ? 'text-orange-400' : 'text-yellow-400'}"></i>
+                            <div>
+                                <span class="font-medium text-gray-300 font-mono text-xs">${sig.signal}</span>
+                                <p class="text-gray-400 mt-1">${sig.evidence}</p>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            lucide.createIcons();
+        }
+
+    </script>
+</body>
+</html>

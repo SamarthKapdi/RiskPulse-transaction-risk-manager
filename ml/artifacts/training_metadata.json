@@ -1,0 +1,139 @@
+{
+  "timestamp": "2026-08-23T12:44:41.352654",
+  "best_model": "hist_gradient_boosting",
+  "model_path": "D:\\AllProjects\\Razorpay Buildathon\\ml\\artifacts\\risk_model.joblib",
+  "preprocessor_path": "D:\\AllProjects\\Razorpay Buildathon\\ml\\artifacts\\preprocessor.joblib",
+  "train_samples": 7000,
+  "val_samples": 1500,
+  "train_fraud_rate": 0.051571428571428574,
+  "val_fraud_rate": 0.038,
+  "num_features": 21,
+  "feature_names": [
+    "amount",
+    "transaction_velocity",
+    "amount_vs_customer_baseline",
+    "amount_vs_merchant_baseline",
+    "transactions_last_5m",
+    "transactions_last_1h",
+    "transactions_last_24h",
+    "failed_attempts",
+    "distance_from_previous",
+    "account_age_days",
+    "historical_transaction_count",
+    "historical_avg_amount",
+    "historical_std_amount",
+    "payment_method_credit_card",
+    "payment_method_debit_card",
+    "payment_method_net_banking",
+    "payment_method_upi",
+    "payment_method_wallet",
+    "currency_EUR",
+    "currency_INR",
+    "currency_USD"
+  ],
+  "results": {
+    "logistic_regression": {
+      "pr_auc": 0.8101948928097453,
+      "roc_auc": 0.977909083172241,
+      "f1": 0.5964912280701754,
+      "precision": 0.4473684210526316,
+      "recall": 0.8947368421052632,
+      "classification_report": {
+        "0": {
+          "precision": 0.9956709956709957,
+          "recall": 0.9563409563409564,
+          "f1-score": 0.975609756097561,
+          "support": 1443.0
+        },
+        "1": {
+          "precision": 0.4473684210526316,
+          "recall": 0.8947368421052632,
+          "f1-score": 0.5964912280701754,
+          "support": 57.0
+        },
+        "accuracy": 0.954,
+        "macro avg": {
+          "precision": 0.7215197083618137,
+          "recall": 0.9255388992231097,
+          "f1-score": 0.7860504920838682,
+          "support": 1500.0
+        },
+        "weighted avg": {
+          "precision": 0.9748354978354979,
+          "recall": 0.954,
+          "f1-score": 0.9612032520325203,
+          "support": 1500.0
+        }
+      }
+    },
+    "random_forest": {
+      "pr_auc": 0.9007360971735533,
+      "roc_auc": 0.9896171475118843,
+      "f1": 0.8269230769230769,
+      "precision": 0.9148936170212766,
+      "recall": 0.7543859649122807,
+      "classification_report": {
+        "0": {
+          "precision": 0.9903647625602202,
+          "recall": 0.9972279972279973,
+          "f1-score": 0.9937845303867403,
+          "support": 1443.0
+        },
+        "1": {
+          "precision": 0.9148936170212766,
+          "recall": 0.7543859649122807,
+          "f1-score": 0.8269230769230769,
+          "support": 57.0
+        },
+        "accuracy": 0.988,
+        "macro avg": {
+          "precision": 0.9526291897907484,
+          "recall": 0.875806981070139,
+          "f1-score": 0.9103538036549086,
+          "support": 1500.0
+        },
+        "weighted avg": {
+          "precision": 0.9874968590297404,
+          "recall": 0.988,
+          "f1-score": 0.9874437951551212,
+          "support": 1500.0
+        }
+      }
+    },
+    "hist_gradient_boosting": {
+      "pr_auc": 0.9513922881455431,
+      "roc_auc": 0.9932158879527301,
+      "f1": 0.8849557522123894,
+      "precision": 0.8928571428571429,
+      "recall": 0.8771929824561403,
+      "classification_report": {
+        "0": {
+          "precision": 0.9951523545706371,
+          "recall": 0.9958419958419958,
+          "f1-score": 0.9954970557672325,
+          "support": 1443.0
+        },
+        "1": {
+          "precision": 0.8928571428571429,
+          "recall": 0.8771929824561403,
+          "f1-score": 0.8849557522123894,
+          "support": 57.0
+        },
+        "accuracy": 0.9913333333333333,
+        "macro avg": {
+          "precision": 0.9440047487138901,
+          "recall": 0.9365174891490681,
+          "f1-score": 0.9402264039898109,
+          "support": 1500.0
+        },
+        "weighted avg": {
+          "precision": 0.9912651365255244,
+          "recall": 0.9913333333333333,
+          "f1-score": 0.9912964862321486,
+          "support": 1500.0
+        }
+      }
+    }
+  },
+  "feature_importances": null
+}

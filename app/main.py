@@ -13,6 +13,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.jobs import router as jobs_router
+from app.api.risk import router as risk_router
 from app.core.config import get_settings
 from app.schemas.job import HealthResponse
 
@@ -36,12 +37,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 app = FastAPI(
-    title="AI-Powered Transaction Processing Pipeline",
+    title="RazorGuard — Explainable AI Transaction Risk Manager",
     description=(
-        "Upload CSV transaction files, clean them, detect anomalies, "
-        "classify with Gemini LLM, and retrieve aggregated summaries."
+        "Defense-only AI risk detection system for payment transactions. "
+        "Detects suspicious behavior, produces calibrated risk scores, "
+        "gathers evidence, explains decisions, and routes through bounded policy. "
+        "Built for Razorpay AI Buildathon 2026 — Track 02: AI Risk Manager."
     ),
-    version="1.0.0",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
@@ -56,6 +59,7 @@ app.add_middleware(
 
 # ── Routers ──────────────────────────────────────────────────────────────────
 app.include_router(jobs_router)
+app.include_router(risk_router)
 
 
 # ── Health check ─────────────────────────────────────────────────────────────
