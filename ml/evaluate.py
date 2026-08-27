@@ -1,5 +1,5 @@
-"""
-Model evaluation for RazorGuard — held-out test set evaluation.
+﻿"""
+Model evaluation for RiskPulse â€” held-out test set evaluation.
 
 IMPORTANT: This script should be run ONCE after model and threshold
 are finalized. The test set must not be used during development.
@@ -106,7 +106,7 @@ def evaluate_model(
 
     y_pred = (y_prob >= threshold).astype(int)
 
-    # ── Core Metrics ────────────────────────────────────────────────────
+    # â”€â”€ Core Metrics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     precision = precision_score(y_test, y_pred, zero_division=0)
     recall = recall_score(y_test, y_pred, zero_division=0)
     f1 = f1_score(y_test, y_pred, zero_division=0)
@@ -130,19 +130,19 @@ def evaluate_model(
     logger.info("FP: %d, FN: %d, TP: %d, TN: %d", fp, fn, tp, tn)
     logger.info("FPR: %.4f, FNR: %.4f", fpr, fnr)
 
-    # ── Cost Analysis ───────────────────────────────────────────────────
+    # â”€â”€ Cost Analysis â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     cost_config = CostConfig()
     costs = compute_expected_costs(y_test, y_pred, cost_config)
     threshold_analysis = threshold_cost_analysis(y_test, y_prob, cost_config)
 
     logger.info("=== COST ANALYSIS ===")
     logger.info("(%s)", cost_config.label)
-    logger.info("FP Cost: ₹%.2f", costs["expected_fp_cost_inr"])
-    logger.info("FN Cost: ₹%.2f", costs["expected_fn_cost_inr"])
-    logger.info("Total:   ₹%.2f", costs["total_expected_cost_inr"])
-    logger.info("Per 1K:  ₹%.2f", costs["cost_per_1000_transactions_inr"])
+    logger.info("FP Cost: â‚¹%.2f", costs["expected_fp_cost_inr"])
+    logger.info("FN Cost: â‚¹%.2f", costs["expected_fn_cost_inr"])
+    logger.info("Total:   â‚¹%.2f", costs["total_expected_cost_inr"])
+    logger.info("Per 1K:  â‚¹%.2f", costs["cost_per_1000_transactions_inr"])
 
-    # ── Per Risk Level ──────────────────────────────────────────────────
+    # â”€â”€ Per Risk Level â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     risk_level_analysis = {}
     for level, lo, hi in [("LOW", 0, 0.3), ("MEDIUM", 0.3, 0.6), ("HIGH", 0.6, 0.85), ("CRITICAL", 0.85, 1.01)]:
         mask = (y_prob >= lo) & (y_prob < hi)
@@ -155,14 +155,14 @@ def evaluate_model(
                 "precision": round(float(level_precision), 4),
             }
 
-    # ── Classification Report ───────────────────────────────────────────
+    # â”€â”€ Classification Report â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     cls_report = classification_report(y_test, y_pred, output_dict=True)
 
-    # ── Curves data for visualization ───────────────────────────────────
+    # â”€â”€ Curves data for visualization â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     pr_precisions, pr_recalls, pr_thresholds = precision_recall_curve(y_test, y_prob)
     fpr_curve, tpr_curve, roc_thresholds = roc_curve(y_test, y_prob)
 
-    # ── Build report ────────────────────────────────────────────────────
+    # â”€â”€ Build report â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     report = {
         "evaluation_timestamp": datetime.utcnow().isoformat(),
         "model": training_metadata.get("best_model", "unknown"),
@@ -219,7 +219,7 @@ def _generate_markdown_report(report: dict, output_path: str):
     dataset = report["dataset"]
 
     lines = [
-        "# RazorGuard — Evaluation Report",
+        "# RiskPulse â€” Evaluation Report",
         "",
         f"> Generated: {report['evaluation_timestamp']}",
         f"> Model: {report['model']}",
@@ -253,20 +253,20 @@ def _generate_markdown_report(report: dict, output_path: str):
         "",
         "## Cost Analysis",
         "",
-        f"> ⚠️ {costs['cost_config_label']}",
+        f"> âš ï¸ {costs['cost_config_label']}",
         "",
         f"| Metric | Value |",
         f"|--------|-------|",
-        f"| Review cost per legit flagged | ₹{costs['legitimate_review_cost_inr']} |",
-        f"| Cost per missed fraud | ₹{costs['fraud_missed_cost_inr']} |",
-        f"| Total FP cost | ₹{costs['expected_fp_cost_inr']:,.2f} |",
-        f"| Total FN cost | ₹{costs['expected_fn_cost_inr']:,.2f} |",
-        f"| **Total expected cost** | **₹{costs['total_expected_cost_inr']:,.2f}** |",
-        f"| Cost per 1,000 transactions | ₹{costs['cost_per_1000_transactions_inr']:,.2f} |",
+        f"| Review cost per legit flagged | â‚¹{costs['legitimate_review_cost_inr']} |",
+        f"| Cost per missed fraud | â‚¹{costs['fraud_missed_cost_inr']} |",
+        f"| Total FP cost | â‚¹{costs['expected_fp_cost_inr']:,.2f} |",
+        f"| Total FN cost | â‚¹{costs['expected_fn_cost_inr']:,.2f} |",
+        f"| **Total expected cost** | **â‚¹{costs['total_expected_cost_inr']:,.2f}** |",
+        f"| Cost per 1,000 transactions | â‚¹{costs['cost_per_1000_transactions_inr']:,.2f} |",
         "",
         "## Threshold / Cost Analysis",
         "",
-        "| Threshold | Precision | Recall | F1 | FP | FN | Total Cost (₹) |",
+        "| Threshold | Precision | Recall | F1 | FP | FN | Total Cost (â‚¹) |",
         "|-----------|-----------|--------|-----|-----|-----|-----------------|",
     ]
 
@@ -304,7 +304,7 @@ def _generate_markdown_report(report: dict, output_path: str):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Evaluate RazorGuard on held-out test set")
+    parser = argparse.ArgumentParser(description="Evaluate RiskPulse on held-out test set")
     parser.add_argument("--test", default="data/test.csv", help="Test CSV path")
     parser.add_argument("--model-dir", default=MODEL_DIR, help="Model artifacts directory")
     parser.add_argument("--output", default=EVAL_DIR, help="Output directory")
@@ -313,3 +313,4 @@ if __name__ == "__main__":
 
     evaluate_model(args.test, args.model_dir, args.output, args.threshold)
     logger.info("Evaluation complete.")
+

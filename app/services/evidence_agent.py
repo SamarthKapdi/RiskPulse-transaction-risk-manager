@@ -1,5 +1,5 @@
-"""
-Evidence & Explanation Agent for RazorGuard.
+﻿"""
+Evidence & Explanation Agent for RiskPulse.
 
 Uses Gemini as a BOUNDED explanation agent.
 Falls back to deterministic template-based explanations if Gemini is unavailable.
@@ -180,3 +180,4 @@ Respond with JSON:
     except Exception as e:
         logger.error("Failed to parse Gemini explanation: %s", e)
         return _deterministic_explanation(transaction, risk_assessment, policy_decision)
+

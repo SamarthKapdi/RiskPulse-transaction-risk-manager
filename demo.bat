@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 
 echo =======================================================
-echo RazorGuard --- Explainable AI Transaction Risk Manager
+echo RiskPulse --- Explainable AI Transaction Risk Manager
 echo =======================================================
 echo.
 echo Phase 1: Checking Python Environment...
@@ -12,8 +12,8 @@ if not exist "venv\Scripts\python.exe" (
     exit /b 1
 )
 
-echo Phase 2: Starting RazorGuard API Server...
-start "RazorGuard API" cmd /c ".\venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000"
+echo Phase 2: Starting RiskPulse API Server...
+start "RiskPulse API" cmd /c ".\venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000"
 
 echo.
 echo Waiting for API to start...
@@ -32,5 +32,5 @@ echo.
 echo Press any key to stop the server and exit...
 pause > nul
 
-taskkill /F /FI "WindowTitle eq RazorGuard API*" > nul 2>&1
+taskkill /F /FI "WindowTitle eq RiskPulse API*" > nul 2>&1
 echo Stopped.

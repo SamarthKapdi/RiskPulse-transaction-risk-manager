@@ -1,5 +1,5 @@
-"""
-Risk Engine for RazorGuard.
+﻿"""
+Risk Engine for RiskPulse.
 
 Combines ML model predictions with risk signals to produce
 a comprehensive risk assessment for each transaction.
@@ -67,7 +67,7 @@ class RiskEngine:
             self._preprocessor = joblib.load(preprocessor_path)
             logger.info("Risk model loaded from %s", model_path)
         else:
-            logger.warning("ML model not found at %s — using signal-only mode", model_path)
+            logger.warning("ML model not found at %s â€” using signal-only mode", model_path)
 
     def _classify_risk_level(self, score: float) -> str:
         """Map a risk score to a risk level."""
@@ -173,3 +173,4 @@ def get_risk_engine() -> RiskEngine:
     if _engine_instance is None:
         _engine_instance = RiskEngine()
     return _engine_instance
+

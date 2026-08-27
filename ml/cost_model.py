@@ -1,5 +1,5 @@
-"""
-Cost model for RazorGuard false-positive / false-negative economics.
+﻿"""
+Cost model for RiskPulse false-positive / false-negative economics.
 
 IMPORTANT: All cost values are ILLUSTRATIVE merchant assumptions.
 They do NOT represent real Razorpay economics.
@@ -173,3 +173,4 @@ def find_optimal_threshold(
 
     best = min(analysis, key=lambda x: x["total_cost_inr"])
     return best["threshold"], best
+

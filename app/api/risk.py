@@ -1,5 +1,5 @@
-"""
-Risk API router for RazorGuard.
+﻿"""
+Risk API router for RiskPulse.
 
 Exposes endpoints for transaction risk analysis, explanations,
 evaluation metrics, and audit trail.
@@ -46,6 +46,8 @@ def _analyze_single(txn_data: dict, db: Session) -> tuple[dict, dict, dict]:
     """Run full analysis pipeline on a single transaction."""
     engine = get_risk_engine()
     policy = get_policy_engine()
+    
+    txn_id = txn_data["transaction_id"]
 
     # Risk assessment
     risk_result = engine.analyze_transaction(txn_data)
@@ -93,7 +95,7 @@ def _analyze_single(txn_data: dict, db: Session) -> tuple[dict, dict, dict]:
     return combined, risk_result, policy_decision.to_dict()
 
 
-# ── POST /risk/analyze ───────────────────────────────────────────────────────
+# â”€â”€ POST /risk/analyze â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 @router.post(
@@ -120,7 +122,7 @@ def analyze_transaction(
     return RiskResult(**combined)
 
 
-# ── GET /risk/{transaction_id} ───────────────────────────────────────────────
+# â”€â”€ GET /risk/{transaction_id} â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 @router.get(
@@ -138,7 +140,7 @@ def get_risk_result(transaction_id: str) -> RiskResult:
     return RiskResult(**_analyzed_results[transaction_id])
 
 
-# ── GET /risk/{transaction_id}/explanation ────────────────────────────────────
+# â”€â”€ GET /risk/{transaction_id}/explanation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 @router.get(
@@ -174,7 +176,7 @@ def get_explanation(transaction_id: str) -> RiskExplanation:
     return RiskExplanation(**explanation)
 
 
-# ── POST /risk/batch ─────────────────────────────────────────────────────────
+# â”€â”€ POST /risk/batch â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 @router.post(
@@ -208,7 +210,7 @@ def batch_analyze(
     )
 
 
-# ── GET /risk/evaluation ─────────────────────────────────────────────────────
+# â”€â”€ GET /risk/evaluation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 @router.get(
@@ -248,7 +250,7 @@ def get_evaluation_metrics() -> EvaluationMetrics:
     )
 
 
-# ── GET /risk/metrics ────────────────────────────────────────────────────────
+# â”€â”€ GET /risk/metrics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 @router.get(
@@ -282,7 +284,7 @@ def get_risk_metrics() -> RiskMetrics:
     )
 
 
-# ── GET /risk/audit/{transaction_id} ─────────────────────────────────────────
+# â”€â”€ GET /risk/audit/{transaction_id} â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 @router.get(
@@ -315,3 +317,4 @@ def get_audit_record(
         policy_version=record.policy_version,
         explanation=record.explanation,
     )
+

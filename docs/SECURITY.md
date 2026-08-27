@@ -1,6 +1,6 @@
-# Security & Defense-Only Architecture
+﻿# Security & Defense-Only Architecture
 
-RazorGuard is designed to comply strictly with the "Defense-Only" requirement of the Razorpay AI Buildathon 2026.
+RiskPulse is designed to comply strictly with the "Defense-Only" requirement of the Razorpay AI Buildathon 2026.
 
 ## 1. Deterministic Policy Enforcement
 The `PolicyEngine` (`app/services/policy_engine.py`) is the ultimate arbiter of all risk decisions. 
@@ -24,3 +24,4 @@ All sensitive configurations (like the `GEMINI_API_KEY` and `DATABASE_URL`) are 
 
 ## 7. API Validation & Database Security
 The FastAPI application strictly types and validates all incoming requests using Pydantic models. Database queries are parameterized by SQLAlchemy, completely eliminating SQL injection vectors. No stack traces or sensitive internals are exposed in HTTP response payloads.
+

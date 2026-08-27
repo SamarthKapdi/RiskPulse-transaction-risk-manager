@@ -1,5 +1,5 @@
-"""
-Feature engineering for RazorGuard risk model.
+﻿"""
+Feature engineering for RiskPulse risk model.
 
 Transforms raw transaction data into ML-ready features.
 Handles missing values, categorical encoding, and feature scaling.
@@ -17,7 +17,7 @@ from sklearn.impute import SimpleImputer
 
 logger = logging.getLogger(__name__)
 
-# ── Feature Definitions ─────────────────────────────────────────────────────
+# â”€â”€ Feature Definitions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 NUMERIC_FEATURES = [
     "amount",
@@ -154,3 +154,4 @@ def get_feature_names(preprocessor: ColumnTransformer) -> list[str]:
         elif name == "bin":
             names.extend(columns)
     return names
+

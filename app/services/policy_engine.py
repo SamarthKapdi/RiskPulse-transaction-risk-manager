@@ -1,14 +1,14 @@
-"""
-Bounded Policy Engine for RazorGuard.
+﻿"""
+Bounded Policy Engine for RiskPulse.
 
 Deterministic decision engine that maps risk levels to actions.
 The LLM CANNOT override the policy engine.
 
 Decisions:
-- LOW    → ALLOW
-- MEDIUM → ALLOW + MONITOR
-- HIGH   → REVIEW
-- CRITICAL → HOLD
+- LOW    â†’ ALLOW
+- MEDIUM â†’ ALLOW + MONITOR
+- HIGH   â†’ REVIEW
+- CRITICAL â†’ HOLD
 
 This is strictly defense-only. No offensive capabilities.
 """
@@ -32,7 +32,7 @@ class PolicyDecision:
     action_details: str
     policy_version: str
     requires_review: bool
-    defense_only: bool = True  # Always True — hard constraint
+    defense_only: bool = True  # Always True â€” hard constraint
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -52,7 +52,7 @@ class PolicyEngine:
     def __init__(self, policy_version: str = POLICY_VERSION):
         self.policy_version = policy_version
 
-        # Decision matrix: risk_level → (decision, requires_review, action_details)
+        # Decision matrix: risk_level â†’ (decision, requires_review, action_details)
         self._decision_matrix = {
             "LOW": (
                 "ALLOW",
@@ -109,7 +109,7 @@ class PolicyEngine:
             action_details=details,
             policy_version=self.policy_version,
             requires_review=requires_review,
-            defense_only=True,  # Hard constraint — never changes
+            defense_only=True,  # Hard constraint â€” never changes
         )
 
     def get_review_queue_filter(self) -> list[str]:
@@ -130,3 +130,4 @@ def get_policy_engine() -> PolicyEngine:
     if _policy_instance is None:
         _policy_instance = PolicyEngine()
     return _policy_instance
+

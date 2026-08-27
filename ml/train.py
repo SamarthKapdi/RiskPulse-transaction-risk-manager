@@ -1,5 +1,5 @@
-"""
-Model training for RazorGuard risk detection.
+﻿"""
+Model training for RiskPulse risk detection.
 
 Trains multiple models, selects best based on validation PR-AUC,
 and persists the winning model + preprocessor.
@@ -192,7 +192,7 @@ def train_models(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Train RazorGuard risk model")
+    parser = argparse.ArgumentParser(description="Train RiskPulse risk model")
     parser.add_argument("--train", default="data/train.csv", help="Training CSV")
     parser.add_argument("--val", default="data/validation.csv", help="Validation CSV")
     parser.add_argument("--output", default=MODEL_DIR, help="Output directory for artifacts")
@@ -200,3 +200,4 @@ if __name__ == "__main__":
 
     train_models(args.train, args.val, args.output)
     logger.info("Training complete.")
+

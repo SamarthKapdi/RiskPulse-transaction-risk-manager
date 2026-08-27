@@ -1,5 +1,5 @@
-"""
-Synthetic Transaction Dataset Generator for RazorGuard.
+﻿"""
+Synthetic Transaction Dataset Generator for RiskPulse.
 
 Generates realistic payment transactions with fraud labels for model training.
 Uses deterministic seeds for reproducibility.
@@ -31,7 +31,7 @@ import pandas as pd
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
 logger = logging.getLogger(__name__)
 
-# ── Configuration ───────────────────────────────────────────────────────────
+# â”€â”€ Configuration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 SEED = 42
 NUM_TRANSACTIONS = 10_000
 NUM_CUSTOMERS = 200
@@ -52,7 +52,7 @@ COUNTRIES = [
     "NL", "CH", "HK", "MY", "TH",
 ]
 
-# ── Customer Profile Generator ──────────────────────────────────────────────
+# â”€â”€ Customer Profile Generator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 def _generate_customers(rng: np.random.Generator) -> pd.DataFrame:
@@ -92,7 +92,7 @@ def _generate_customers(rng: np.random.Generator) -> pd.DataFrame:
     return pd.DataFrame(customers)
 
 
-# ── Merchant Generator ──────────────────────────────────────────────────────
+# â”€â”€ Merchant Generator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 def _generate_merchants(rng: np.random.Generator) -> pd.DataFrame:
@@ -123,7 +123,7 @@ def _generate_merchants(rng: np.random.Generator) -> pd.DataFrame:
     return pd.DataFrame(merchants)
 
 
-# ── Legitimate Transaction Generator ────────────────────────────────────────
+# â”€â”€ Legitimate Transaction Generator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 def _generate_legitimate_transactions(
@@ -193,7 +193,7 @@ def _generate_legitimate_transactions(
     return transactions
 
 
-# ── Fraudulent Transaction Generator ───────────────────────────────────────
+# â”€â”€ Fraudulent Transaction Generator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 def _generate_fraud_transactions(
@@ -301,7 +301,7 @@ def _generate_fraud_transactions(
     return transactions
 
 
-# ── Feature Enrichment ──────────────────────────────────────────────────────
+# â”€â”€ Feature Enrichment â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 def _compute_derived_features(df: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
@@ -311,7 +311,7 @@ def _compute_derived_features(df: pd.DataFrame, rng: np.random.Generator) -> pd.
     # Transaction ID
     df["transaction_id"] = [f"TXN_{i:06d}" for i in range(len(df))]
 
-    # ── Per-customer historical stats ───────────────────────────────────
+    # â”€â”€ Per-customer historical stats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     # We compute these as if we're seeing transactions in order
     cust_groups = df.groupby("customer_id")
 
@@ -332,7 +332,7 @@ def _compute_derived_features(df: pd.DataFrame, rng: np.random.Generator) -> pd.
         df["historical_std_amount"].replace(0, 1)
     ).clip(-10, 10)
 
-    # ── Per-merchant stats ──────────────────────────────────────────────
+    # â”€â”€ Per-merchant stats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     merch_groups = df.groupby("merchant_id")
     df["merchant_avg_amount"] = merch_groups["amount"].transform("mean")
     df["merchant_std_amount"] = merch_groups["amount"].transform("std").fillna(0)
@@ -341,7 +341,7 @@ def _compute_derived_features(df: pd.DataFrame, rng: np.random.Generator) -> pd.
         df["merchant_std_amount"].replace(0, 1)
     ).clip(-10, 10)
 
-    # ── Velocity features (vectorized via rolling windows) ─────────────
+    # â”€â”€ Velocity features (vectorized via rolling windows) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     df["timestamp_dt"] = pd.to_datetime(df["timestamp"])
     df = df.sort_values(["customer_id", "timestamp_dt"]).reset_index(drop=True)
     df["_ones"] = 1
@@ -371,7 +371,7 @@ def _compute_derived_features(df: pd.DataFrame, rng: np.random.Generator) -> pd.
 
     df = df.drop(columns=["_ones"])
 
-    # ── Distance from previous (simulated) ──────────────────────────────
+    # â”€â”€ Distance from previous (simulated) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     # Assign lat/lon per country, compute haversine-like distance
     country_coords = {
         "IN": (20.5, 78.9), "US": (37.1, -95.7), "GB": (55.4, -3.4),
@@ -393,11 +393,11 @@ def _compute_derived_features(df: pd.DataFrame, rng: np.random.Generator) -> pd.
         dist = np.sqrt(lat_diff**2 + lon_diff**2) * 111  # approximate km
         df.loc[cust_df.index, "distance_from_previous"] = dist.values
 
-    # ── Account age ─────────────────────────────────────────────────────
+    # â”€â”€ Account age â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     # account_age already set, add noise for variety
     df["account_age_days"] = df["customer_age_days"]
 
-    # ── New location ────────────────────────────────────────────────────
+    # â”€â”€ New location â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     # If country differs from customer's mode country
     cust_home = df.groupby("customer_id")["country"].agg(
         lambda x: x.mode().iloc[0] if len(x.mode()) > 0 else x.iloc[0]
@@ -405,17 +405,17 @@ def _compute_derived_features(df: pd.DataFrame, rng: np.random.Generator) -> pd.
     df["_home_country"] = df["customer_id"].map(cust_home)
     df["new_location"] = (df["country"] != df["_home_country"]).astype(int)
 
-    # ── Transaction velocity (as a ratio vs normal) ─────────────────────
+    # â”€â”€ Transaction velocity (as a ratio vs normal) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     cust_avg_24h = df.groupby("customer_id")["transactions_last_24h"].transform("mean")
     df["transaction_velocity"] = (df["transactions_last_24h"] / cust_avg_24h.replace(0, 1)).clip(0, 20)
 
-    # ── Cleanup internal columns ────────────────────────────────────────
+    # â”€â”€ Cleanup internal columns â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     df = df.drop(columns=["_lat", "_lon", "_home_country", "timestamp_dt", "customer_age_days"])
 
     return df
 
 
-# ── Main ────────────────────────────────────────────────────────────────────
+# â”€â”€ Main â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 def generate_dataset(output_dir: str, seed: int = SEED, num_txns: int = NUM_TRANSACTIONS) -> str:
@@ -541,3 +541,4 @@ if __name__ == "__main__":
     split_dataset(full_path, args.data_dir, seed=args.seed)
 
     logger.info("Dataset generation complete.")
+

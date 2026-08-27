@@ -1,4 +1,4 @@
-# RazorGuard — Evaluation Report
+﻿# RiskPulse â€” Evaluation Report
 
 > Generated: 2026-08-23T17:07:18.478122
 > Model: hist_gradient_boosting
@@ -37,20 +37,20 @@
 
 ## Cost Analysis
 
-> ⚠️ Illustrative merchant cost assumptions
+> âš ï¸ Illustrative merchant cost assumptions
 
 | Metric | Value |
 |--------|-------|
-| Review cost per legit flagged | ₹150.0 |
-| Cost per missed fraud | ₹5000.0 |
-| Total FP cost | ₹300.00 |
-| Total FN cost | ₹40,000.00 |
-| **Total expected cost** | **₹40,300.00** |
-| Cost per 1,000 transactions | ₹26,866.67 |
+| Review cost per legit flagged | â‚¹150.0 |
+| Cost per missed fraud | â‚¹5000.0 |
+| Total FP cost | â‚¹300.00 |
+| Total FN cost | â‚¹40,000.00 |
+| **Total expected cost** | **â‚¹40,300.00** |
+| Cost per 1,000 transactions | â‚¹26,866.67 |
 
 ## Threshold / Cost Analysis
 
-| Threshold | Precision | Recall | F1 | FP | FN | Total Cost (₹) |
+| Threshold | Precision | Recall | F1 | FP | FN | Total Cost (â‚¹) |
 |-----------|-----------|--------|-----|-----|-----|-----------------|
 | 0.10 | 0.9367 | 0.9024 | 0.9193 | 5 | 8 | 40,750.00 |
 | 0.20 | 0.9737 | 0.9024 | 0.9367 | 2 | 8 | 40,300.00 |

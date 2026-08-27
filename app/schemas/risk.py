@@ -1,5 +1,5 @@
-"""
-Pydantic v2 schemas for the RazorGuard risk API.
+﻿"""
+Pydantic v2 schemas for the RiskPulse risk API.
 """
 
 from datetime import datetime
@@ -8,7 +8,7 @@ from typing import Any, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 
-# ── Transaction Input ────────────────────────────────────────────────────────
+# â”€â”€ Transaction Input â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 class TransactionAnalysisRequest(BaseModel):
@@ -40,7 +40,7 @@ class TransactionAnalysisRequest(BaseModel):
     historical_std_amount: Optional[float] = None
 
 
-# ── Risk Signal ──────────────────────────────────────────────────────────────
+# â”€â”€ Risk Signal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 class RiskSignalOut(BaseModel):
@@ -51,7 +51,7 @@ class RiskSignalOut(BaseModel):
     evidence: str
 
 
-# ── Risk Result ──────────────────────────────────────────────────────────────
+# â”€â”€ Risk Result â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 class RiskResult(BaseModel):
@@ -70,7 +70,7 @@ class RiskResult(BaseModel):
     timestamp: str
 
 
-# ── Explanation ──────────────────────────────────────────────────────────────
+# â”€â”€ Explanation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 class RiskExplanation(BaseModel):
@@ -86,7 +86,7 @@ class RiskExplanation(BaseModel):
     source: str  # "gemini" or "deterministic"
 
 
-# ── Batch ────────────────────────────────────────────────────────────────────
+# â”€â”€ Batch â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 class BatchAnalysisRequest(BaseModel):
@@ -102,7 +102,7 @@ class BatchAnalysisResponse(BaseModel):
     review_required_count: int
 
 
-# ── Evaluation Metrics ───────────────────────────────────────────────────────
+# â”€â”€ Evaluation Metrics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 class EvaluationMetrics(BaseModel):
@@ -121,7 +121,7 @@ class EvaluationMetrics(BaseModel):
     dataset: dict
 
 
-# ── Audit Record ─────────────────────────────────────────────────────────────
+# â”€â”€ Audit Record â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 class AuditRecord(BaseModel):
@@ -138,7 +138,7 @@ class AuditRecord(BaseModel):
     explanation: Optional[str] = None
 
 
-# ── Risk Metrics ─────────────────────────────────────────────────────────────
+# â”€â”€ Risk Metrics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 class RiskMetrics(BaseModel):
@@ -149,3 +149,4 @@ class RiskMetrics(BaseModel):
     review_queue_size: int
     avg_risk_score: float
     model_version: str
+
