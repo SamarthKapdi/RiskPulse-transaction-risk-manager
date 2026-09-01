@@ -1,4 +1,4 @@
-﻿"""
+"""
 Risk Signal Engine for RiskPulse.
 
 Generates interpretable risk signals from transaction data.
@@ -131,7 +131,7 @@ class RiskSignalEngine:
 
     def _check_amount_anomaly(self, txn: dict) -> Optional[RiskSignal]:
         """Check if transaction amount deviates from customer baseline."""
-        z_score = txn.get("amount_vs_customer_baseline", 0)
+        z_score = txn.get("amount_vs_customer_baseline") or 0
         t = self.thresholds
 
         if abs(z_score) >= t["amount_z_score_critical"]:
@@ -160,8 +160,10 @@ class RiskSignalEngine:
 
     def _check_velocity_anomaly(self, txn: dict) -> Optional[RiskSignal]:
         """Check transaction velocity (frequency in recent windows)."""
-        v5m = txn.get("transactions_last_5m", 1)
-        v1h = txn.get("transactions_last_1h", 1)
+        v5m = txn.get("transactions_last_5m")
+        v5m = v5m if v5m is not None else 1
+        v1h = txn.get("transactions_last_1h")
+        v1h = v1h if v1h is not None else 1
         t = self.thresholds
 
         if v5m >= t["velocity_5m_high"]:
@@ -196,8 +198,10 @@ class RiskSignalEngine:
 
     def _check_location_anomaly(self, txn: dict) -> Optional[RiskSignal]:
         """Check for unusual location / impossible travel."""
-        distance = txn.get("distance_from_previous", 0)
-        new_location = txn.get("new_location", 0)
+        distance = txn.get("distance_from_previous")
+        distance = distance if distance is not None else 0
+        new_location = txn.get("new_location")
+        new_location = new_location if new_location is not None else 0
         t = self.thresholds
 
         if distance >= t["distance_high_km"]:
@@ -226,8 +230,9 @@ class RiskSignalEngine:
 
     def _check_device_anomaly(self, txn: dict) -> Optional[RiskSignal]:
         """Check if device is new for this customer."""
-        new_device = txn.get("new_device", False)
-        amount_z = abs(txn.get("amount_vs_customer_baseline", 0))
+        new_device = txn.get("new_device")
+        new_device = new_device if new_device is not None else False
+        amount_z = abs(txn.get("amount_vs_customer_baseline") or 0)
 
         if new_device and amount_z >= 2.0:
             return RiskSignal(
@@ -247,7 +252,8 @@ class RiskSignalEngine:
 
     def _check_failed_attempts(self, txn: dict) -> Optional[RiskSignal]:
         """Check for repeated failed attempts before this transaction."""
-        failed = txn.get("failed_attempts", 0)
+        failed = txn.get("failed_attempts")
+        failed = failed if failed is not None else 0
         t = self.thresholds
 
         if failed >= t["failed_attempts_high"]:
@@ -268,7 +274,8 @@ class RiskSignalEngine:
 
     def _check_account_age(self, txn: dict) -> Optional[RiskSignal]:
         """Check if account is very new (higher fraud risk)."""
-        age_days = txn.get("account_age_days", 365)
+        age_days = txn.get("account_age_days")
+        age_days = age_days if age_days is not None else 365
         t = self.thresholds
 
         if age_days <= t["account_age_very_young_days"]:
@@ -289,7 +296,7 @@ class RiskSignalEngine:
 
     def _check_merchant_anomaly(self, txn: dict) -> Optional[RiskSignal]:
         """Check if amount is unusual for this merchant."""
-        z_score = txn.get("amount_vs_merchant_baseline", 0)
+        z_score = txn.get("amount_vs_merchant_baseline") or 0
 
         if abs(z_score) >= 4.0:
             return RiskSignal(
@@ -312,15 +319,19 @@ class RiskSignalEngine:
         deviation_score = 0.0
 
         # Count weak signals
-        if abs(txn.get("amount_vs_customer_baseline", 0)) >= 1.5:
+        amount_z = txn.get("amount_vs_customer_baseline")
+        amount_z = amount_z if amount_z is not None else 0
+        if abs(amount_z) >= 1.5:
             deviation_score += 1
-        if txn.get("new_location", 0):
+        if txn.get("new_location"):
             deviation_score += 1
-        if txn.get("new_device", False):
+        if txn.get("new_device"):
             deviation_score += 1
-        if txn.get("failed_attempts", 0) >= 1:
+        failed_att = txn.get("failed_attempts")
+        if failed_att is not None and failed_att >= 1:
             deviation_score += 1
-        if txn.get("transactions_last_1h", 1) >= 5:
+        txn_1h = txn.get("transactions_last_1h")
+        if txn_1h is not None and txn_1h >= 5:
             deviation_score += 1
 
         if deviation_score >= 4:

@@ -49,7 +49,7 @@ To start the live dashboard and backend:
 docker compose build --no-cache
 docker compose up -d
 ```
-Then navigate to `http://localhost:8000/dashboard/index.html` (if hosting dashboard statically) or use the API directly.
+Then open `dashboard/index.html` in your web browser or via VS Code Live Server to view the UI.
 
 ### Docker Setup
 The environment is fully Dockerized for reproducibility, running the FastAPI app, Celery worker, Redis, and PostgreSQL.
@@ -76,14 +76,14 @@ GEMINI_API_KEY=your_gemini_key_here
 - `GET /risk/audit/{transaction_id}`: Fetch the persistent audit record.
 
 ### Testing
-RiskPulse includes a comprehensive test suite (29 tests) verifying everything from anomaly detection algorithms to the deterministic policy engine.
+RiskPulse includes a comprehensive test suite (30 tests) verifying everything from anomaly detection algorithms to the deterministic policy engine.
 ```bash
 python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
 pytest tests/ -v
 ```
-*(All 29 tests pass successfully)*
+*(All 30 tests pass successfully)*
 
 ### Limitations
 - The provided dataset is highly synthetic and designed to prove the architecture. Synthetic benchmark performance (PR-AUC 0.9699) is **not** equivalent to production fraud performance in the real world.

@@ -13,7 +13,7 @@
 
 ## Factors
 - **Demographics**: Demographic data (race, gender, age, income) are **NOT** used in this model to prevent bias.
-- **Features**: 25 features are derived primarily from transaction metadata (amount, currency, merchant) and contextual behavioral data (velocity, device history, location distance).
+- **Features**: 23 features are derived primarily from transaction metadata (amount, currency, merchant) and contextual behavioral data (velocity, device history, location distance).
 
 ## Metrics
 Evaluated on a strictly held-out test set of 1,500 transactions.
