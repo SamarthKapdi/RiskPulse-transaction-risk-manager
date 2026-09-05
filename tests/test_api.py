@@ -7,9 +7,12 @@ job listing, and individual job status retrieval.
 
 import io
 import uuid
+from datetime import datetime, timezone
 from unittest.mock import patch, MagicMock
 
 import pytest
+
+from app.models.risk_audit import RiskAuditTrail
 
 
 # ---------------------------------------------------------------------------
@@ -21,6 +24,44 @@ class TestHealthEndpoint:
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "healthy"
+
+
+class TestRiskTransactions:
+    def test_list_transactions_reads_persisted_audits(self, client, db_session):
+        """Historical risk rows are returned newest-first from the audit table."""
+        db_session.add_all([
+            RiskAuditTrail(
+                transaction_id="LIST_OLD",
+                timestamp=datetime(2026, 1, 1, tzinfo=timezone.utc),
+                model_version="v1.0",
+                risk_score=0.01,
+                risk_level="LOW",
+                decision="ALLOW",
+                requires_review=False,
+                signals=[],
+                policy_version="1.0.0",
+            ),
+            RiskAuditTrail(
+                transaction_id="LIST_NEW",
+                timestamp=datetime(2026, 1, 2, tzinfo=timezone.utc),
+                model_version="v1.0",
+                risk_score=1.0,
+                risk_level="CRITICAL",
+                decision="HOLD",
+                requires_review=True,
+                signals=[{"signal": "test", "value": 1, "severity": "HIGH", "evidence": "test"}],
+                policy_version="1.0.0",
+            ),
+        ])
+        db_session.commit()
+
+        response = client.get("/risk/transactions")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert [item["transaction_id"] for item in data] == ["LIST_NEW", "LIST_OLD"]
+        assert data[0]["requires_review"] is True
+        assert data[0]["signal_count"] == 1
 
 
 # ---------------------------------------------------------------------------

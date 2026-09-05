@@ -26,6 +26,7 @@ from app.schemas.risk import (
     RiskMetrics,
     RiskResult,
     RiskSignalOut,
+    RiskTransactionSummary,
     TransactionAnalysisRequest,
 )
 from app.services.evidence_agent import generate_risk_explanation
@@ -40,6 +41,25 @@ router = APIRouter(prefix="/risk", tags=["risk"])
 _audit_trail: dict[str, dict] = {}
 _analyzed_results: dict[str, dict] = {}
 _explanations: dict[str, dict] = {}
+
+
+def _normalized_signals(signals: list[dict] | None) -> list[dict]:
+    """Normalize legacy mojibake while preserving persisted signal meaning."""
+    normalized = []
+    for signal in signals or []:
+        item = dict(signal)
+        if isinstance(item.get("evidence"), str):
+            item["evidence"] = (
+                item["evidence"]
+                .replace("\u00c3\u0097", chr(0x00d7))
+                .replace("\u00cf\u0083", chr(0x03c3))
+                .replace("\u00c3\u2014", chr(0x00d7))
+                .replace("\u00cf\u0192", chr(0x03c3))
+                .replace("\u00c3\u0083\u00e2\u0080\u0094", chr(0x00d7))
+                .replace("\u00c3\u008f\u00c6\u0092", chr(0x03c3))
+            )
+        normalized.append(item)
+    return normalized
 
 
 def _analyze_single(txn_data: dict, db: Session) -> tuple[dict, dict, dict]:
@@ -95,6 +115,29 @@ def _analyze_single(txn_data: dict, db: Session) -> tuple[dict, dict, dict]:
     return combined, risk_result, policy_decision.to_dict()
 
 
+def _result_from_audit(record: RiskAuditTrail) -> dict:
+    """Rebuild the public result shape when the process cache is cold."""
+    policy_decision = get_policy_engine().evaluate({
+        "risk_level": record.risk_level,
+        "risk_score": record.risk_score,
+    })
+    signals = _normalized_signals(record.signals)
+    return {
+        "transaction_id": record.transaction_id,
+        "risk_score": record.risk_score,
+        "risk_level": record.risk_level,
+        "confidence": round(max(record.risk_score, 1 - record.risk_score), 4),
+        "model_version": record.model_version,
+        "signals": signals,
+        "signal_count": len(signals),
+        "timestamp": record.timestamp.isoformat() if record.timestamp else "",
+        "decision": policy_decision.decision,
+        "action_details": policy_decision.action_details,
+        "requires_review": record.requires_review,
+        "policy_version": record.policy_version,
+    }
+
+
 # â”€â”€ POST /risk/analyze â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
@@ -122,6 +165,35 @@ def analyze_transaction(
     return RiskResult(**combined)
 
 
+@router.get(
+    "/transactions",
+    response_model=list[RiskTransactionSummary],
+    summary="List persisted analyzed transactions",
+)
+def list_transactions(db: Session = Depends(get_db)) -> list[RiskTransactionSummary]:
+    """Return historical risk decisions from the PostgreSQL audit trail."""
+    records = db.query(RiskAuditTrail).order_by(
+        RiskAuditTrail.timestamp.desc(),
+        RiskAuditTrail.transaction_id.desc(),
+    ).all()
+
+    return [
+        RiskTransactionSummary(
+            transaction_id=record.transaction_id,
+            timestamp=record.timestamp.isoformat() if record.timestamp else "",
+            risk_score=record.risk_score,
+            risk_level=record.risk_level,
+            decision=record.decision,
+            requires_review=record.requires_review,
+            signals=_normalized_signals(record.signals),
+            signal_count=len(record.signals or []),
+            model_version=record.model_version,
+            policy_version=record.policy_version,
+        )
+        for record in records
+    ]
+
+
 # â”€â”€ GET /risk/{transaction_id} â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
@@ -130,14 +202,26 @@ def analyze_transaction(
     response_model=RiskResult,
     summary="Get risk result for a transaction",
 )
-def get_risk_result(transaction_id: str) -> RiskResult:
+def get_risk_result(
+    transaction_id: str,
+    db: Session = Depends(get_db),
+) -> RiskResult:
     """Retrieve the risk assessment for a previously analyzed transaction."""
-    if transaction_id not in _analyzed_results:
+    result = _analyzed_results.get(transaction_id)
+    if result is None:
+        record = db.query(RiskAuditTrail).filter(
+            RiskAuditTrail.transaction_id == transaction_id
+        ).first()
+        if record:
+            result = _result_from_audit(record)
+            _analyzed_results[transaction_id] = result
+
+    if result is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"No risk analysis found for transaction {transaction_id}",
         )
-    return RiskResult(**_analyzed_results[transaction_id])
+    return RiskResult(**result)
 
 
 # â”€â”€ GET /risk/{transaction_id}/explanation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -150,9 +234,21 @@ def get_risk_result(transaction_id: str) -> RiskResult:
     description="Returns a human-readable explanation of why a transaction was "
                 "flagged, with evidence grounded in model outputs and signals.",
 )
-def get_explanation(transaction_id: str) -> RiskExplanation:
+def get_explanation(
+    transaction_id: str,
+    db: Session = Depends(get_db),
+) -> RiskExplanation:
     """Get explanation for a risk decision."""
-    if transaction_id not in _analyzed_results:
+    result = _analyzed_results.get(transaction_id)
+    if result is None:
+        record = db.query(RiskAuditTrail).filter(
+            RiskAuditTrail.transaction_id == transaction_id
+        ).first()
+        if record:
+            result = _result_from_audit(record)
+            _analyzed_results[transaction_id] = result
+
+    if result is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"No risk analysis found for transaction {transaction_id}",
@@ -162,7 +258,6 @@ def get_explanation(transaction_id: str) -> RiskExplanation:
     if transaction_id in _explanations:
         return RiskExplanation(**_explanations[transaction_id])
 
-    result = _analyzed_results[transaction_id]
     audit = _audit_trail.get(transaction_id, {})
 
     explanation = generate_risk_explanation(
@@ -258,7 +353,7 @@ def get_evaluation_metrics() -> EvaluationMetrics:
     response_model=RiskMetrics,
     summary="Get aggregate risk metrics",
 )
-def get_risk_metrics() -> RiskMetrics:
+def get_risk_metrics(db: Session = Depends(get_db)) -> RiskMetrics:
     """Return aggregate metrics from analyzed transactions."""
     engine = get_risk_engine()
 
@@ -266,13 +361,14 @@ def get_risk_metrics() -> RiskMetrics:
     decision_dist = defaultdict(int)
     total_score = 0.0
 
-    for result in _analyzed_results.values():
-        risk_dist[result["risk_level"]] += 1
-        decision_dist[result["decision"]] += 1
-        total_score += result["risk_score"]
+    records = db.query(RiskAuditTrail).all()
+    for record in records:
+        risk_dist[record.risk_level] += 1
+        decision_dist[record.decision] += 1
+        total_score += record.risk_score
 
-    total = len(_analyzed_results)
-    review_queue = sum(1 for r in _analyzed_results.values() if r.get("requires_review"))
+    total = len(records)
+    review_queue = sum(1 for record in records if record.requires_review)
 
     return RiskMetrics(
         total_analyzed=total,
@@ -313,7 +409,8 @@ def get_audit_record(
         risk_score=record.risk_score,
         risk_level=record.risk_level,
         decision=record.decision,
-        signals=record.signals,
+        requires_review=record.requires_review,
+        signals=_normalized_signals(record.signals),
         policy_version=record.policy_version,
         explanation=record.explanation,
     )

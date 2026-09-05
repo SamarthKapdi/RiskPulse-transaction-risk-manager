@@ -139,7 +139,7 @@ class RiskSignalEngine:
                 signal="amount_anomaly",
                 value=round(z_score, 2),
                 severity=Severity.CRITICAL,
-                evidence=f"Transaction amount is {abs(z_score):.1f}Ã— standard deviations "
+                evidence=f"Transaction amount is {abs(z_score):.1f}× standard deviations "
                          f"from customer's historical mean",
             )
         elif abs(z_score) >= t["amount_z_score_high"]:
@@ -147,14 +147,14 @@ class RiskSignalEngine:
                 signal="amount_anomaly",
                 value=round(z_score, 2),
                 severity=Severity.HIGH,
-                evidence=f"Transaction amount deviates {abs(z_score):.1f}Ïƒ from customer baseline",
+                evidence=f"Transaction amount deviates {abs(z_score):.1f}σ from customer baseline",
             )
         elif abs(z_score) >= t["amount_z_score_medium"]:
             return RiskSignal(
                 signal="amount_anomaly",
                 value=round(z_score, 2),
                 severity=Severity.MEDIUM,
-                evidence=f"Transaction amount is moderately unusual ({abs(z_score):.1f}Ïƒ from mean)",
+                evidence=f"Transaction amount is moderately unusual ({abs(z_score):.1f}σ from mean)",
             )
         return None
 
@@ -303,14 +303,14 @@ class RiskSignalEngine:
                 signal="merchant_anomaly",
                 value=round(z_score, 2),
                 severity=Severity.HIGH,
-                evidence=f"Transaction amount is {abs(z_score):.1f}Ïƒ from merchant's average",
+                evidence=f"Transaction amount is {abs(z_score):.1f}σ from merchant's average",
             )
         elif abs(z_score) >= 2.5:
             return RiskSignal(
                 signal="merchant_anomaly",
                 value=round(z_score, 2),
                 severity=Severity.MEDIUM,
-                evidence=f"Amount is unusual for this merchant ({abs(z_score):.1f}Ïƒ from mean)",
+                evidence=f"Amount is unusual for this merchant ({abs(z_score):.1f}σ from mean)",
             )
         return None
 

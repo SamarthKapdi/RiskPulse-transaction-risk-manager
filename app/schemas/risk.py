@@ -70,6 +70,20 @@ class RiskResult(BaseModel):
     timestamp: str
 
 
+class RiskTransactionSummary(BaseModel):
+    """Persisted transaction summary for historical dashboard views."""
+    transaction_id: str
+    timestamp: str
+    risk_score: float
+    risk_level: str
+    decision: str
+    requires_review: bool
+    signals: list[RiskSignalOut]
+    signal_count: int
+    model_version: str
+    policy_version: str
+
+
 # â”€â”€ Explanation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
@@ -132,6 +146,7 @@ class AuditRecord(BaseModel):
     risk_score: float
     risk_level: str
     decision: str
+    requires_review: bool
     signals: list[dict]
     evidence: Optional[str] = None
     policy_version: str

@@ -380,18 +380,18 @@
 
         <!-- TRANSACTIONS SECTION -->
         <div id="transactions" class="section-content">
-            <h1 class="text-2xl font-bold mb-6">Review Queue</h1>
+            <h1 class="text-2xl font-bold mb-6">Analyzed Transactions</h1>
             
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Transaction List -->
                 <div class="lg:col-span-1 glass-panel rounded-xl border border-dark-border h-[800px] flex flex-col">
                     <div class="p-4 border-b border-dark-border bg-dark-surface">
-                        <input type="text" placeholder="Search transactions..." class="w-full bg-black border border-gray-700 rounded-md py-2 px-3 text-sm text-white focus:outline-none focus:border-razor-500">
+                        <input id="txn-search" type="text" placeholder="Search transactions..." class="w-full bg-black border border-gray-700 rounded-md py-2 px-3 text-sm text-white focus:outline-none focus:border-razor-500">
                     </div>
                     <div class="overflow-y-auto flex-grow" id="txn-list">
                         <!-- Populated by JS -->
                         <div class="p-8 text-center text-gray-500 text-sm">
-                            Run simulation to populate queue
+                            Loading analyzed transactions...
                         </div>
                     </div>
                 </div>
@@ -411,16 +411,30 @@
                                     <h2 class="text-2xl font-bold text-white" id="det-id">TXN_ID</h2>
                                     <span id="det-badge" class="px-2.5 py-0.5 rounded text-xs font-semibold">REVIEW</span>
                                 </div>
-                                <p class="text-sm text-gray-400"><span id="det-time">Date</span> • <span id="det-merchant">Merchant</span></p>
+                                <p class="text-sm text-gray-400"><span id="det-time">Date</span> • <span id="det-merchant">Historical audit record</span></p>
                             </div>
                             <div class="text-right">
-                                <p class="text-3xl font-bold text-white" id="det-amount">₹0.00</p>
+                                <p class="text-3xl font-bold text-white" id="det-amount">Risk</p>
                                 <p class="text-sm text-gray-400 mt-1">Risk Score: <span id="det-score" class="font-mono text-white">0.000</span></p>
                             </div>
                         </div>
                         
                         <!-- Scrollable Content -->
                         <div class="p-6 overflow-y-auto flex-grow space-y-8">
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                                <div class="bg-dark-surface border border-dark-border rounded p-3">
+                                    <span class="text-gray-500">Requires review</span>
+                                    <p id="det-review" class="text-white mt-1">--</p>
+                                </div>
+                                <div class="bg-dark-surface border border-dark-border rounded p-3">
+                                    <span class="text-gray-500">Model version</span>
+                                    <p id="det-model" class="text-white mt-1">--</p>
+                                </div>
+                                <div class="bg-dark-surface border border-dark-border rounded p-3">
+                                    <span class="text-gray-500">Policy version</span>
+                                    <p id="det-policy" class="text-white mt-1">--</p>
+                                </div>
+                            </div>
                             
                             <!-- Gemini Explanation -->
                             <div>
@@ -465,6 +479,8 @@
     </main>
 
     <script>
+        const API_BASE = 'http://localhost:8000';
+
         // --- Initialization ---
         lucide.createIcons();
         
@@ -540,14 +556,104 @@
             if (decision === 'REVIEW') return 'badge-review';
             return 'badge-hold';
         }
+
+        function formatTimestamp(timestamp) {
+            return timestamp ? new Date(timestamp).toLocaleString() : 'Unknown time';
+        }
+
+        function renderLiveTransactions(transactions) {
+            const tbody = document.getElementById('live-transactions-table');
+            tbody.innerHTML = '';
+
+            if (!transactions.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500">No analyzed transactions yet.</td></tr>';
+                return;
+            }
+
+            transactions.slice(0, 5).forEach(txn => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-dark-surface/50 transition-colors';
+                const badgeClass = getBadgeClass(txn.decision);
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap font-mono text-gray-300">${txn.transaction_id}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-gray-400">${new Date(txn.timestamp).toLocaleTimeString()}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-gray-500">Not persisted</td>
+                    <td class="px-6 py-4 whitespace-nowrap font-mono ${txn.risk_score > 0.6 ? 'text-orange-400' : 'text-gray-400'}">${Number(txn.risk_score).toFixed(3)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-gray-400">${txn.signal_count ?? txn.signals?.length ?? 0}</td>
+                    <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 rounded text-xs font-semibold ${badgeClass}">${txn.decision}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function loadTransactions() {
+            const list = document.getElementById('txn-list');
+            try {
+                const response = await fetch(`${API_BASE}/risk/transactions`);
+                if (!response.ok) throw new Error('API returned ' + response.status);
+                storedTxns = await response.json();
+                renderReviewQueue();
+                renderLiveTransactions(storedTxns);
+            } catch (error) {
+                console.error('Failed to load transactions:', error);
+                list.innerHTML = '<div class="p-8 text-center text-red-400 text-sm">Unable to load analyzed transactions from the backend.</div>';
+            }
+        }
+
+        document.getElementById('txn-search').addEventListener('input', renderReviewQueue);
         
         // --- API Integration ---
         
         document.getElementById('btn-load-eval').addEventListener('click', loadEvaluation);
+
+        async function loadDashboardData() {
+            try {
+                const response = await fetch(`${API_BASE}/risk/metrics/summary`);
+                if (!response.ok) throw new Error('API returned ' + response.status);
+
+                const data = await response.json();
+                const riskDistribution = data.risk_distribution || {};
+                const decisionDistribution = data.decision_distribution || {};
+
+                analyzedCount = Number(data.total_analyzed) || 0;
+                highRiskCount = (Number(riskDistribution.HIGH) || 0) + (Number(riskDistribution.CRITICAL) || 0);
+                reviewCount = Number(data.review_queue_size) || 0;
+
+                document.getElementById('kpi-total').textContent = analyzedCount;
+                document.getElementById('kpi-high-risk').textContent = highRiskCount;
+                document.getElementById('kpi-high-risk-pct').textContent = analyzedCount
+                    ? ((highRiskCount / analyzedCount) * 100).toFixed(1) + '%'
+                    : '0.0%';
+                document.getElementById('kpi-review').textContent = reviewCount;
+
+                riskChart.data.datasets[0].data = [
+                    Number(riskDistribution.LOW) || 0,
+                    Number(riskDistribution.MEDIUM) || 0,
+                    Number(riskDistribution.HIGH) || 0,
+                    Number(riskDistribution.CRITICAL) || 0
+                ];
+                riskChart.update();
+
+                policyChart.data.datasets[0].data = [
+                    Number(decisionDistribution.ALLOW) || 0,
+                    Number(decisionDistribution.ALLOW_MONITOR) || 0,
+                    Number(decisionDistribution.REVIEW) || 0,
+                    Number(decisionDistribution.HOLD) || 0
+                ];
+                policyChart.update();
+            } catch (error) {
+                console.error('Failed to load dashboard summary:', error);
+                document.getElementById('system-status').textContent = 'Backend Unavailable';
+            }
+        }
+
+        loadDashboardData();
+        loadEvaluation();
+        loadTransactions();
         
         async function loadEvaluation() {
             try {
-                const response = await fetch('/risk/evaluation/metrics');
+                const response = await fetch(`${API_BASE}/risk/evaluation/metrics`);
                 if (response.ok) {
                     const data = await response.json();
                     document.getElementById('eval-empty').classList.add('hidden');
@@ -582,43 +688,27 @@
         }
         
         async function demoTransaction(type) {
-            let amount, isNewDevice, isNewLocation, histAmount;
-            
-            if (type === 'normal') {
-                amount = Math.random() * 2000 + 100;
-                isNewDevice = false;
-                isNewLocation = false;
-                histAmount = 1500;
-            } else if (type === 'suspicious') {
-                amount = Math.random() * 5000 + 4000;
-                isNewDevice = true;
-                isNewLocation = false;
-                histAmount = 1500;
-            } else if (type === 'high_risk') {
-                amount = Math.random() * 20000 + 10000;
-                isNewDevice = true;
-                isNewLocation = true;
-                histAmount = 1500;
-            } else {
-                amount = Math.random() * 50000 + 40000;
-                isNewDevice = true;
-                isNewLocation = true;
-                histAmount = 500;
-            }
+            const scenarios = {
+                normal: { amount: 1250, new_device: false, new_location: false, historical_avg_amount: 1500, account_age_days: 300, merchant_name: 'Amazon' },
+                suspicious: { amount: 6500, new_device: true, new_location: false, historical_avg_amount: 1500, account_age_days: 300, merchant_name: 'Flipkart' },
+                high_risk: { amount: 15000, new_device: true, new_location: true, historical_avg_amount: 1500, account_age_days: 300, merchant_name: 'Unknown POS' },
+                critical: { amount: 50000, new_device: true, new_location: true, historical_avg_amount: 500, account_age_days: 2, merchant_name: 'Unknown POS' }
+            };
+            const scenario = scenarios[type];
             
             const txnData = {
                 customer_id: "CUST_DEMO",
-                merchant_name: ["Amazon", "Flipkart", "Swiggy", "Ola", "Unknown POS"][Math.floor(Math.random() * 5)],
-                amount: amount,
+                merchant_name: scenario.merchant_name,
+                amount: scenario.amount,
                 currency: "INR",
-                new_device: isNewDevice,
-                new_location: isNewLocation,
-                historical_avg_amount: histAmount,
-                account_age_days: type === 'critical' ? 2 : 300
+                new_device: scenario.new_device,
+                new_location: scenario.new_location,
+                historical_avg_amount: scenario.historical_avg_amount,
+                account_age_days: scenario.account_age_days
             };
             
             try {
-                const response = await fetch('/risk/analyze', {
+                const response = await fetch(`${API_BASE}/risk/analyze`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(txnData)
@@ -636,125 +726,104 @@
             }
         }
         
-        function processTransaction(txn) {
-            // Update counts
-            analyzedCount++;
-            if (txn.risk_level === 'HIGH' || txn.risk_level === 'CRITICAL') highRiskCount++;
-            if (txn.requires_review) reviewCount++;
-            
-            document.getElementById('kpi-total').textContent = analyzedCount;
-            document.getElementById('kpi-high-risk').textContent = highRiskCount;
-            document.getElementById('kpi-high-risk-pct').textContent = ((highRiskCount / analyzedCount) * 100).toFixed(1) + '%';
-            document.getElementById('kpi-review').textContent = reviewCount;
-            
-            // Update charts
-            const lvlIdx = {'LOW': 0, 'MEDIUM': 1, 'HIGH': 2, 'CRITICAL': 3}[txn.risk_level];
-            const decIdx = {'ALLOW': 0, 'ALLOW_MONITOR': 1, 'REVIEW': 2, 'HOLD': 3}[txn.decision];
-            
-            riskChart.data.datasets[0].data[lvlIdx]++;
-            riskChart.update();
-            
-            policyChart.data.datasets[0].data[decIdx]++;
-            policyChart.update();
-            
-            // Add to live table
-            const tbody = document.getElementById('live-transactions-table');
-            if (tbody.children.length === 1 && tbody.children[0].textContent.includes('Click')) {
-                tbody.innerHTML = '';
-            }
-            
-            const tr = document.createElement('tr');
-            tr.className = 'hover:bg-dark-surface/50 transition-colors';
-            
-            const timeStr = new Date(txn.timestamp).toLocaleTimeString();
-            const badgeClass = getBadgeClass(txn.decision);
-            
-            tr.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap font-mono text-gray-300">${txn.transaction_id}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-gray-400">${timeStr}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-white">₹${txn.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                <td class="px-6 py-4 whitespace-nowrap font-mono ${txn.risk_score > 0.6 ? 'text-orange-400' : 'text-gray-400'}">${txn.risk_score.toFixed(3)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-gray-400">${txn.signals.length}</td>
-                <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 rounded text-xs font-semibold ${badgeClass}">${txn.decision}</span></td>
-            `;
-            
-            tbody.insertBefore(tr, tbody.firstChild);
-            if (tbody.children.length > 5) tbody.removeChild(tbody.lastChild);
-            
-            // Add to review queue if needed
-            if (txn.requires_review) {
-                storedTxns.unshift(txn);
-                renderReviewQueue();
-            }
+        async function processTransaction(txn) {
+            await Promise.all([loadDashboardData(), loadTransactions()]);
         }
         
         function renderReviewQueue() {
             const list = document.getElementById('txn-list');
             list.innerHTML = '';
-            
-            storedTxns.forEach(txn => {
+            const query = document.getElementById('txn-search').value.trim().toLowerCase();
+            const transactions = storedTxns.filter(txn => txn.transaction_id.toLowerCase().includes(query));
+
+            if (!transactions.length) {
+                list.innerHTML = `<div class="p-8 text-center text-gray-500 text-sm">${storedTxns.length ? 'No matching transactions.' : 'No analyzed transactions yet.'}</div>`;
+                return;
+            }
+
+            transactions.forEach(txn => {
                 const div = document.createElement('div');
                 div.className = 'p-4 border-b border-dark-border cursor-pointer hover:bg-dark-surface/50 transition-colors';
                 div.onclick = () => showTransactionDetail(txn);
-                
-                const timeStr = new Date(txn.timestamp).toLocaleTimeString();
-                
+
                 div.innerHTML = `
                     <div class="flex justify-between items-start mb-1">
                         <span class="font-mono text-sm font-semibold text-gray-200">${txn.transaction_id}</span>
-                        <span class="text-xs text-gray-500">${timeStr}</span>
+                        <span class="text-xs text-gray-500">${new Date(txn.timestamp).toLocaleTimeString()}</span>
                     </div>
                     <div class="flex justify-between items-end">
-                        <span class="text-sm text-gray-400">${txn.merchant_name}</span>
-                        <span class="text-sm font-bold text-white">₹${txn.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                        <span class="text-sm text-gray-400">${txn.decision}</span>
+                        <span class="text-sm font-bold text-white">Score ${Number(txn.risk_score).toFixed(4)}</span>
                     </div>
                     <div class="mt-2 flex gap-2">
                         <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-red-900/30 text-red-400 border border-red-500/30">${txn.risk_level}</span>
-                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-800 text-gray-400">${txn.signals.length} SIGNALS</span>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-800 text-gray-400">${txn.signal_count ?? txn.signals?.length ?? 0} SIGNALS</span>
                     </div>
                 `;
                 list.appendChild(div);
             });
         }
         
-        function showTransactionDetail(txn) {
+        async function showTransactionDetail(txn) {
             document.getElementById('txn-detail-empty').classList.add('hidden');
             const content = document.getElementById('txn-detail-content');
             content.classList.remove('hidden');
             
             document.getElementById('det-id').textContent = txn.transaction_id;
-            document.getElementById('det-time').textContent = new Date(txn.timestamp).toLocaleString();
-            document.getElementById('det-merchant').textContent = txn.merchant_name;
-            document.getElementById('det-amount').textContent = `₹${txn.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-            document.getElementById('det-score').textContent = txn.risk_score.toFixed(4);
+            document.getElementById('det-time').textContent = formatTimestamp(txn.timestamp);
+            document.getElementById('det-merchant').textContent = 'Historical audit record';
+            document.getElementById('det-amount').textContent = txn.risk_level;
+            document.getElementById('det-score').textContent = Number(txn.risk_score).toFixed(4);
+            document.getElementById('det-review').textContent = txn.requires_review ? 'Yes' : 'No';
+            document.getElementById('det-model').textContent = txn.model_version || 'Unavailable';
+            document.getElementById('det-policy').textContent = txn.policy_version || 'Unavailable';
             
             const badge = document.getElementById('det-badge');
             badge.textContent = txn.decision;
             badge.className = `px-2.5 py-0.5 rounded text-xs font-semibold ${getBadgeClass(txn.decision)}`;
             
-            // Fetch actual explanation from AI backend
             document.getElementById('det-explanation').textContent = 'Requesting AI explanation from backend...';
             document.getElementById('det-action').textContent = '...';
             document.getElementById('det-source').textContent = '...';
-            
-            fetch(`/risk/${txn.transaction_id}/explanation`)
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('det-explanation').textContent = data.explanation || 'No explanation provided.';
-                    document.getElementById('det-action').textContent = data.recommended_action || data.action_details || txn.action_details || 'No specific action detail';
-                    document.getElementById('det-source').textContent = data.source || 'UNKNOWN';
-                })
-                .catch(err => {
-                    document.getElementById('det-explanation').textContent = 'Failed to load AI explanation from API.';
-                    document.getElementById('det-action').textContent = txn.action_details || 'Unknown';
-                    document.getElementById('det-source').textContent = 'ERROR';
-                });
+
+            const [resultResponse, explanationResponse, auditResponse] = await Promise.allSettled([
+                fetch(`${API_BASE}/risk/${txn.transaction_id}`),
+                fetch(`${API_BASE}/risk/${txn.transaction_id}/explanation`),
+                fetch(`${API_BASE}/risk/audit/${txn.transaction_id}`)
+            ]);
+
+            if (resultResponse.status === 'fulfilled' && resultResponse.value.ok) {
+                const result = await resultResponse.value.json();
+                txn = { ...txn, ...result };
+                document.getElementById('det-score').textContent = Number(txn.risk_score).toFixed(4);
+                document.getElementById('det-review').textContent = txn.requires_review ? 'Yes' : 'No';
+                document.getElementById('det-model').textContent = txn.model_version || 'Unavailable';
+                document.getElementById('det-policy').textContent = txn.policy_version || 'Unavailable';
+            }
+
+            if (explanationResponse.status === 'fulfilled' && explanationResponse.value.ok) {
+                const data = await explanationResponse.value.json();
+                document.getElementById('det-explanation').textContent = data.explanation || 'No explanation provided.';
+                document.getElementById('det-action').textContent = data.recommended_action || 'No specific action detail';
+                document.getElementById('det-source').textContent = data.source || 'UNKNOWN';
+            } else {
+                document.getElementById('det-explanation').textContent = 'Explanation unavailable from the backend.';
+                document.getElementById('det-action').textContent = 'Review the persisted decision and signals.';
+                document.getElementById('det-source').textContent = 'UNAVAILABLE';
+            }
+
+            if (auditResponse.status === 'fulfilled' && auditResponse.value.ok) {
+                const audit = await auditResponse.value.json();
+                document.getElementById('det-review').textContent = audit.requires_review ? 'Yes' : 'No';
+                document.getElementById('det-model').textContent = audit.model_version || 'Unavailable';
+                document.getElementById('det-policy').textContent = audit.policy_version || 'Unavailable';
+            }
             
             // Signals
             const sigContainer = document.getElementById('det-signals');
             sigContainer.innerHTML = '';
             
-            if (txn.signals.length === 0) {
+            if (!txn.signals || txn.signals.length === 0) {
                 sigContainer.innerHTML = '<p class="text-sm text-gray-500">No specific signals detected.</p>';
             } else {
                 txn.signals.forEach(sig => {
